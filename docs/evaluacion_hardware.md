@@ -1,0 +1,74 @@
+# Evaluación de Hardware: Módulos ESP32 y Técnicas de Multiplexación
+
+Este documento evalúa las opciones para simplificar el hardware de control central de la van utilizando técnicas de multiplexación de pines (expansores I2C) y realiza una recomendación técnica comparativa sobre qué variantes del chip ESP32 (S3, C6, C3, Classic) son más adecuadas para cada componente del sistema.
+
+---
+
+## 1. Multiplexación de Salidas (¿Cómo reducir el uso de GPIOs?)
+
+¡Sí, es totalmente posible y muy recomendable! De hecho, usar multiplexación o expansión por I2C en la unidad central es una práctica de diseño excelente por tres razones:
+1.  **Reduce el número de pines necesarios** en el ESP32 de 11 a solo **2 pines** (SDA y SCL).
+2.  **Protege al ESP32** contra transitorios de corriente o fallas en la etapa de potencia (si un canal falla catastróficamente, destruye el chip expansor de $2, no al microcontrolador principal).
+3.  **Facilita el ruteado de la placa (PCB)** y permite ampliar canales en el futuro sin cambiar el controlador.
+
+A continuación, se evalúan las dos mejores alternativas para expandir pines vía I2C:
+
+### Opción A: PCA9685 (Controlador PWM de 16 Canales I2C) - ¡RECOMENDADO!
+Este chip se comunica por I2C y ofrece 16 canales de salida con modulación por ancho de pulsos (PWM) por hardware de 12 bits de resolución.
+*   **Por qué es ideal para tu Van:** 
+    *   **Atenuación nativa de luces:** Puedes controlar el brillo de las 4 zonas de luces LED de forma independiente y ultra suave sin consumir ciclos del procesador del ESP32.
+    *   **Control de todo tipo de cargas:** Además de PWM para luces, sus salidas pueden conmutar a ON/OFF digital puro (brillo 0% o 100%) para activar los PROFETs de la bomba de agua, ventiladores, o los optoacopladores del inversor.
+    *   **Solo consume 2 pines** del ESP32 (SDA/SCL).
+
+### Opción B: MCP23017 (Expansor de E/S Digitales de 16 Canales I2C)
+Este chip ofrece 16 pines que pueden configurarse individualmente como entradas o salidas digitales.
+*   **Limitación:** Solo maneja estados lógicos llanos (HIGH/LOW). No soporta PWM por hardware.
+*   **Uso:** Excelente si solo vas a usar relés mecánicos de encendido/apagado absoluto, pero no sirve para hacer atenuación progresiva en tus zonas de luces de forma eficiente.
+
+---
+
+## 2. Evaluación Comparativa de Módulos ESP32
+
+Analizamos las cuatro principales variantes de SoC (System on Chip) de Espressif disponibles para determinar cuál se adapta mejor al gabinete eléctrico (Central) y a los paneles de pulsadores (Remotos).
+
+| Característica | ESP32-C6 | ESP32-S3 | ESP32-C3 | ESP32 Classic (WROOM) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Arquitectura** | RISC-V Single-core (160 MHz) | Xtensa LX7 Dual-core (240 MHz) | RISC-V Single-core (160 MHz) | Xtensa Dual-core (240 MHz) |
+| **Conectividad** | Wi-Fi 6 (802.11ax), BLE 5.3, **Zigbee 3.0, Thread/Matter** | Wi-Fi 4, BLE 5.0 | Wi-Fi 4, BLE 5.0 | Wi-Fi 4, BLE 4.2 |
+| **Pines GPIO (DevKit)** | ~22 pines | **~45 pines** | ~15 pines | ~25 pines |
+| **Consumo Deep Sleep** | **Excelente (~15 $\mu$A)** | Medio (~30-40 $\mu$A) | Excelente (~20 $\mu$A) | Alto (~100-150 $\mu$A) |
+| **Formatos XIAO** | **Sí (Seeed Studio)** | Sí (Seeed Studio) | Sí (Seeed Studio) | No (Solo placas grandes) |
+| **Soporte ESP-NOW** | Sí (con Wi-Fi 6) | Sí | Sí | Sí |
+
+---
+
+## 3. Recomendación Arquitectónica del Sistema
+
+### A. Para los Módulos Remotos (Pulsadores)
+*   **Módulo Recomendado:** **Seeed Studio XIAO ESP32-C6**
+*   **Razón:** 
+    1.  **Consumo Ultra Bajo:** Al contar con la tecnología de procesamiento de Wi-Fi 6 y la arquitectura RISC-V, consume muy poca corriente en deep sleep (~15 $\mu$A). Tus 2 baterías AA durarán años.
+    2.  **Tamaño Mini:** Con solo 17.5 x 21 mm, cabe perfectamente en el espacio interior de cualquier cajetín de interruptor de pared de la van.
+    3.  **Futuro Matter/Zigbee:** Si decides integrar el sistema a un hub domótico Matter más adelante, el C6 ya tiene el transceptor de radio necesario (802.15.4) integrado físicamente.
+
+### B. Para la Unidad Central (Gabinete Eléctrico)
+Existen dos combinaciones de alto nivel según tu preferencia de diseño:
+
+#### Opción 1: Híbrido Potente (ESP32-S3 DevKit + Conexión Directa)
+*   **Componentes:** 1x ESP32-S3 DevKitC (Placa de tamaño estándar).
+*   **Razón:** Al tener más de 30 GPIOs libres, no requieres chips multiplexores externos para tu cantidad de canales. Tiene núcleos duales rápidos (útil si luego quieres implementar una pequeña pantalla local táctil en el gabinete, servidor web local robusto, o procesamiento de telemetría de baterías).
+
+#### Opción 2: Ecosistema XIAO Unificado (XIAO ESP32-C6 + PCA9685) - ¡Elegante y Modular!
+*   **Componentes:** 1x Seeed Studio XIAO ESP32-C6 + 1x Chip/Módulo PCA9685.
+*   **Razón:**
+    *   **Homogeneidad:** Usas el mismo microcontrolador en todo el proyecto.
+    *   **Modularidad de Potencia:** El XIAO C6 maneja la lógica y la comunicación inalámbrica ESP-NOW. Solo usa 2 pines para conectarse al PCA9685, el cual maneja físicamente los 11 canales de conmutación.
+    *   **Capacidad de Crecimiento:** Tienes 9 pines libres en el XIAO para otros periféricos y hasta 16 canales PWM en el PCA9685 listos para usar.
+
+---
+
+## 4. Próximos Pasos de Diseño
+
+Si optamos por la **Opción 2 (XIAO ESP32-C6 + PCA9685)** para la central:
+1.  Debemos actualizar la lógica de firmware de la Central para inicializar el bus I2C y controlar las salidas a través de los registros del PCA9685 (usando librerías ligeras de Arduino para este chip).
+2.  El diseño de hardware en Atopile se simplificaría enormemente, ya que la placa del ESP32 central solo tendría trazas de datos I2C (SDA, SCL) hacia el bloque de potencia de salida controlado por el PCA9685.

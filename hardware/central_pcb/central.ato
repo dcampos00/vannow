@@ -1,0 +1,98 @@
+# Atopile (ato) Circuit Design for Van Relay Central Controller
+# This file describes the components and electrical connections for the ESP32 Central PCB.
+
+import ESP32_DevKit from "parts/esp32_devkit.ato"
+import PROFET_HighSideSwitch from "parts/profet_switch.ato"
+import BuckRegulator_12V_5V from "parts/buck_regulator.ato"
+import Optocoupler_Control from "parts/optocoupler.ato"
+
+# Define the Main Central Controller Board
+module VanCentralController:
+    # ----------------------------------------
+    # Signals (Nets)
+    # ----------------------------------------
+    signal gnd
+    signal v_bat_12v
+    signal v_mcu_5v
+    signal v_mcu_3v3
+
+    # ----------------------------------------
+    # Power Supply Stage
+    # ----------------------------------------
+    buck_converter = new BuckRegulator_12V_5V
+    v_bat_12v ~ buck_converter.vin_12v
+    gnd ~ buck_converter.gnd
+    v_mcu_5v ~ buck_converter.vout_5v
+
+    # ----------------------------------------
+    # MCU (ESP32 DevKit Node)
+    # ----------------------------------------
+    esp32 = new ESP32_DevKit
+    v_mcu_5v ~ esp32.VIN     # Power ESP32 via VIN pin (5V)
+    gnd ~ esp32.GND
+    v_mcu_3v3 ~ esp32.V3P3   # 3.3V out from ESP32 regulator (for logic pull-ups)
+
+    # ----------------------------------------
+    # 12V DC Loads: Pump & Aux Outputs (PROFETs)
+    # ----------------------------------------
+    # Channel 5: Water Pump (Bomba de Agua)
+    bomba_switch = new PROFET_HighSideSwitch
+    v_bat_12v ~ bomba_switch.power_in
+    gnd ~ bomba_switch.gnd
+    esp32.GPIO25 ~ bomba_switch.control_in
+    # bomba_switch.power_out connects to the 12V Water Pump load
+
+    # Channel 6: Aux Outlet 1 (Tomacorriente 12V)
+    aux1_switch = new PROFET_HighSideSwitch
+    v_bat_12v ~ aux1_switch.power_in
+    gnd ~ aux1_switch.gnd
+    esp32.GPIO26 ~ aux1_switch.control_in
+
+    # ----------------------------------------
+    # Signal Switching (Optocoupler Outputs)
+    # ----------------------------------------
+    # Channel 10: Inverter Remote Switch (Victron Multiplus II)
+    inverter_ctrl = new Optocoupler_Control
+    esp32.GPIO21 ~ inverter_ctrl.input_anode
+    gnd ~ inverter_ctrl.input_cathode
+    v_mcu_3v3 ~ inverter_ctrl.input_pullup
+    # inverter_ctrl.output_collector & output_emitter connect to the Multiplus remote port
+
+# ==============================================================================
+# PLACEHOLDER PART MODULES
+# Define the internal structures of our custom modules for compiler reference
+# ==============================================================================
+
+module ESP32_DevKit:
+    signal VIN
+    signal GND
+    signal V3P3
+    signal GPIO12
+    signal GPIO13
+    signal GPIO14
+    signal GPIO27
+    signal GPIO25
+    signal GPIO26
+    signal GPIO32
+    signal GPIO33
+    signal GPIO19
+    signal GPIO21
+    signal GPIO22
+
+module PROFET_HighSideSwitch:
+    signal power_in
+    signal power_out
+    signal control_in
+    signal gnd
+
+module BuckRegulator_12V_5V:
+    signal vin_12v
+    signal vout_5v
+    signal gnd
+
+module Optocoupler_Control:
+    signal input_anode
+    signal input_cathode
+    signal input_pullup
+    signal output_collector
+    signal output_emitter
