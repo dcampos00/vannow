@@ -1,0 +1,7 @@
+{
+  "name": "wireless",
+  "version": "1.0.0",
+  "description": "ESP-NOW and Wi-Fi abstraction layer for Central and Remote controllers.",
+  "platforms": ["espressif32", "espressif8266"],
+  "frameworks": ["arduino"]
+}
