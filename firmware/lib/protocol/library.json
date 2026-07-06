@@ -1,0 +1,7 @@
+{
+  "name": "protocol",
+  "version": "1.0.0",
+  "description": "Unified SwitchMessage protocol library compatible with native and embedded platforms.",
+  "platforms": ["*"],
+  "frameworks": ["*"]
+}

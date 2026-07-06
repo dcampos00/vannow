@@ -1,0 +1,7 @@
+{
+  "name": "arduino_mock",
+  "version": "1.0.0",
+  "description": "Arduino API mock for running unit tests natively on host computers.",
+  "platforms": ["*"],
+  "frameworks": ["*"]
+}
