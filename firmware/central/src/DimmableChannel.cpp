@@ -1,8 +1,7 @@
 #include "DimmableChannel.h"
 
-DimmableChannel::DimmableChannel(const char* name, uint8_t pin, uint8_t channel, uint32_t frequency, uint8_t resolution)
+DimmableChannel::DimmableChannel(const char* name, uint8_t pin, uint32_t frequency, uint8_t resolution)
     : Channel(name, pin),
-      _channel(channel),
       _frequency(frequency),
       _resolution(resolution),
       _maxDuty((1 << resolution) - 1),
@@ -15,10 +14,9 @@ DimmableChannel::DimmableChannel(const char* name, uint8_t pin, uint8_t channel,
       _lastHoldMsgTime(0) {}
 
 void DimmableChannel::begin() {
-    // Configure and setup LEDC channel and attach physical pin
-    ledcSetup(_channel, _frequency, _resolution);
-    ledcAttachPin(_pin, _channel);
-    ledcWrite(_channel, 0);
+    // Arduino ESP32 Core 3.x ledcAttach automatically configures and binds a channel to the pin
+    ledcAttach(_pin, _frequency, _resolution);
+    ledcWrite(_pin, 0);
     _isActive = false;
     _currentBrightness = 0;
     _targetBrightness = 0;
@@ -75,7 +73,7 @@ void DimmableChannel::setBrightness(uint8_t brightness) {
 
     // Convert brightness percentage to raw LEDC duty cycle
     uint32_t duty = (uint32_t)((_currentBrightness / 100.0) * _maxDuty);
-    ledcWrite(_channel, duty);
+    ledcWrite(_pin, duty);
 
     if (_currentBrightness > 0) {
         _isActive = true;
@@ -126,7 +124,7 @@ void DimmableChannel::update() {
             }
 
             uint32_t duty = (uint32_t)((_currentBrightness / 100.0) * _maxDuty);
-            ledcWrite(_channel, duty);
+            ledcWrite(_pin, duty);
 
             _isActive = (_currentBrightness > 0);
         }

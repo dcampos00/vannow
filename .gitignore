@@ -5,8 +5,9 @@
 .clang_complete
 .gcc-flags.json
 
-# Python virtual environments
+# Python virtual environments and temporary directories
 scratch_venv/
+scratch/
 .venv/
 venv/
 __pycache__/

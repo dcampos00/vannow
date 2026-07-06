@@ -3,10 +3,10 @@
 SystemController::SystemController() {
     // Define the 11 physical channels using ESP32-S3 DevKit pins as per specifications
     // Channels 0 to 3: Dimmable LED Zones
-    _channels[0] = new DimmableChannel("Lights Zone 1", 12, 0); // Pin 12, LEDC Channel 0
-    _channels[1] = new DimmableChannel("Lights Zone 2", 13, 1); // Pin 13, LEDC Channel 1
-    _channels[2] = new DimmableChannel("Lights Zone 3", 14, 2); // Pin 14, LEDC Channel 2
-    _channels[3] = new DimmableChannel("Lights Zone 4", 27, 3); // Pin 27, LEDC Channel 3
+    _channels[0] = new DimmableChannel("Lights Zone 1", 12); // Pin 12
+    _channels[1] = new DimmableChannel("Lights Zone 2", 13); // Pin 13
+    _channels[2] = new DimmableChannel("Lights Zone 3", 14); // Pin 14
+    _channels[3] = new DimmableChannel("Lights Zone 4", 27); // Pin 27
 
     // Channels 4 to 8: Digital Outputs (Bomba de Agua, Aux 1-3, Ventilador)
     _channels[4] = new DigitalChannel("Water Pump", 25);         // Pin 25
