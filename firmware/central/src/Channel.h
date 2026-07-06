@@ -23,6 +23,9 @@ public:
     const char* getName() const;
     uint8_t getPin() const;
 
+    // Check if the channel is dimmable (overridden by DimmableChannel)
+    virtual bool isDimmable() const { return false; }
+
 protected:
     const char* _name;
     uint8_t _pin;

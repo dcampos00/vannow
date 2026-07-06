@@ -18,6 +18,8 @@ public:
     void setBrightness(uint8_t brightness);
     uint8_t getBrightness() const;
 
+    bool isDimmable() const override { return true; }
+
 private:
     uint8_t _channel;
     uint32_t _frequency;
