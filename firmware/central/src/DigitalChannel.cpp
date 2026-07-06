@@ -1,4 +1,5 @@
 #include "DigitalChannel.h"
+#include <Arduino.h>
 
 DigitalChannel::DigitalChannel(const char* name, uint8_t pin, bool activeLow)
     : Channel(name, pin), _activeLow(activeLow) {}

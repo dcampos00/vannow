@@ -1,7 +1,7 @@
 #ifndef CHANNEL_H
 #define CHANNEL_H
 
-#include <Arduino.h>
+#include <stdint.h>
 #include "protocol.h"
 
 class Channel {

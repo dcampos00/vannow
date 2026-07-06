@@ -1,4 +1,5 @@
 #include "DimmableChannel.h"
+#include <Arduino.h>
 
 DimmableChannel::DimmableChannel(const char* name, uint8_t pin, uint32_t frequency, uint8_t resolution)
     : Channel(name, pin),

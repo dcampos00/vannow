@@ -1,7 +1,7 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 
-#include <Arduino.h>
+#include <stdint.h>
 
 // Action types for button clicks, holds, and encoder adjustments
 enum class ActionType : uint8_t {
