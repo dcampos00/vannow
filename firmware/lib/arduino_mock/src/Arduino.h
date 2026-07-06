@@ -57,6 +57,7 @@ namespace ArduinoMock {
 class MockSerial {
 public:
     void begin(unsigned long baud) {}
+    void flush() {}
     void print(const char* s);
     void print(int n);
     void print(float f);
