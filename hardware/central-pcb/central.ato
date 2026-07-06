@@ -1,10 +1,6 @@
 # Atopile (ato) Circuit Design for Van Relay Central Controller
 # This file describes the components and electrical connections for the ESP32 Central PCB.
 
-import ESP32_DevKit from "parts/esp32_devkit.ato"
-import PROFET_HighSideSwitch from "parts/profet_switch.ato"
-import BuckRegulator_12V_5V from "parts/buck_regulator.ato"
-import Optocoupler_Control from "parts/optocoupler.ato"
 
 # Define the Main Central Controller Board
 module VanCentralController:
