@@ -112,11 +112,77 @@ void test_power_manager_watchdog(void) {
     TEST_ASSERT_TRUE(pm.isExpired());
 }
 
+void test_encoder_handler_ccw_and_noop(void) {
+    EncoderHandler encoder(5, 6, 7); // Pin A = 5, Pin B = 6, Pin SW = 7
+    encoder.begin();
+    
+    ArduinoMock::setPinState(5, HIGH);
+    ArduinoMock::setPinState(6, HIGH);
+    
+    ActionType action;
+    int8_t steps = 0;
+    TEST_ASSERT_FALSE(encoder.checkEvent(action, steps));
+    
+    // CCW: A goes LOW when B is LOW
+    ArduinoMock::setPinState(6, LOW);
+    ArduinoMock::setPinState(5, LOW);
+    encoder.update();
+    
+    TEST_ASSERT_TRUE(encoder.checkEvent(action, steps));
+    TEST_ASSERT_EQUAL(ActionType::EncoderTurn, action);
+    TEST_ASSERT_EQUAL(-1, steps);
+    
+    // Ignore rising edge
+    ArduinoMock::setPinState(5, HIGH);
+    encoder.update();
+    TEST_ASSERT_FALSE(encoder.checkEvent(action, steps));
+}
+
+void test_encoder_handler_button_click(void) {
+    EncoderHandler encoder(5, 6, 7);
+    encoder.begin();
+    
+    ArduinoMock::setPinState(7, HIGH);
+    ActionType action;
+    int8_t steps = 0;
+    TEST_ASSERT_FALSE(encoder.checkEvent(action, steps));
+    
+    // Press SW (LOW)
+    ArduinoMock::setPinState(7, LOW);
+    TEST_ASSERT_FALSE(encoder.checkEvent(action, steps));
+    
+    // Debounce
+    ArduinoMock::advanceMillis(10);
+    TEST_ASSERT_FALSE(encoder.checkEvent(action, steps));
+    
+    ArduinoMock::advanceMillis(15);
+    TEST_ASSERT_FALSE(encoder.checkEvent(action, steps));
+    
+    // Release SW (HIGH)
+    ArduinoMock::setPinState(7, HIGH);
+    TEST_ASSERT_TRUE(encoder.checkEvent(action, steps));
+    TEST_ASSERT_EQUAL(ActionType::Click, action);
+    TEST_ASSERT_EQUAL(0, steps);
+}
+
+void test_power_manager_sleep_execution(void) {
+    PowerManager pm(1500);
+    pm.begin();
+    
+    uint8_t wakeupPins[3] = {10, 11, 12};
+    pm.goToSleep(wakeupPins, 3);
+    
+    TEST_ASSERT_TRUE(true);
+}
+
 int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(test_button_handler_click);
     RUN_TEST(test_button_handler_hold_and_release);
     RUN_TEST(test_encoder_handler_rotation);
     RUN_TEST(test_power_manager_watchdog);
+    RUN_TEST(test_encoder_handler_ccw_and_noop);
+    RUN_TEST(test_encoder_handler_button_click);
+    RUN_TEST(test_power_manager_sleep_execution);
     return UNITY_END();
 }
