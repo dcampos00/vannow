@@ -2,179 +2,174 @@
  * @file main.cpp
  * @brief Seeed Studio XIAO ESP32-C6 Remote Switch Panel (Battery Powered)
  * 
- * Configured for Seeed Studio XIAO ESP32-C6.
- * The MCU stays in Deep Sleep. Pressing a button wakes the MCU,
- * reads the battery voltage, sends an ESP-NOW command to the central,
- * and enters Deep Sleep again.
+ * Manages remote button and encoder panels. Wakes up from Deep Sleep on activity,
+ * maintains an active state for 1.5 seconds to handle continuous hold/turn events,
+ * and enters Deep Sleep again once idle.
  */
 
 #include <Arduino.h>
 #include <WiFi.h>
 #include <esp_now.h>
-#include <esp_sleep.h>
+#include "ButtonHandler.h"
+#include "EncoderHandler.h"
+#include "PowerManager.h"
+#include "protocol.h"
 
 // ==========================================
-// CONFIGURACIÓN DE IDENTIDAD Y DESTINO
+// CONFIGURATION AND TARGETS
 // ==========================================
-#define REMOTE_ID 1 
+#define REMOTE_ID 1
 
-// DIRECCIÓN MAC DEL ESP32 CENTRAL
-// Reemplazar con la MAC del Central que se muestra en su monitor serial.
+#define PANEL_TYPE_BUTTONS 1
+#define PANEL_TYPE_ENCODER 2
+
+// Configure panel layout type here
+#define CONFIG_PANEL_TYPE PANEL_TYPE_BUTTONS
+
+// Central MAC address (replace with your receiver's address if different)
 uint8_t centralMacAddress[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
 
 // ==========================================
-// CONFIGURACIÓN DE PINES (XIAO ESP32-C6)
+// PIN DEFINITIONS & INSTANTIATIONS
 // ==========================================
-#define NUM_BUTTONS 4
-// Pines D0, D1, D2 y D3 en la placa (corresponden a GPIO 0, 1, 2 y 3)
-const int buttonPins[NUM_BUTTONS] = {0, 1, 2, 3};
-
-// Pin de lectura de batería (D4 / A4 en el XIAO, corresponde a GPIO 4)
 #define BATTERY_ADC_PIN 4 
 
-// ==========================================
-// ESTRUCTURA DEL PAYLOAD ESP-NOW
-// ==========================================
-struct __attribute__((packed)) SwitchMessage {
-    uint8_t remote_id;      
-    uint8_t button_index;   
-    uint8_t action;         
-    float battery_voltage;  
-};
+#if (CONFIG_PANEL_TYPE == PANEL_TYPE_ENCODER)
+EncoderHandler encoder(0, 1, 2); // Pin A = D0 (GPIO 0), Pin B = D1 (GPIO 1), Pin SW = D2 (GPIO 2)
+const uint8_t wakeupPins[] = {0, 2}; // Wake up on rotation (GPIO 0) or button click (GPIO 2)
+#else
+ButtonHandler btn0(0, 0); // D0
+ButtonHandler btn1(1, 1); // D1
+ButtonHandler btn2(2, 2); // D2
+ButtonHandler btn3(3, 3); // D3
+ButtonHandler* buttons[4] = { &btn0, &btn1, &btn2, &btn3 };
+const uint8_t wakeupPins[] = {0, 1, 2, 3}; // Wake up on any button press
+#endif
 
-// Variables globales de sincronización
+const uint8_t NUM_WAKEUP_PINS = sizeof(wakeupPins) / sizeof(wakeupPins[0]);
+
+PowerManager powerManager(1500); // 1.5 seconds activity timeout
+
 volatile bool messageSent = false;
 volatile bool deliverySuccess = false;
 
 // ==========================================
-// FUNCIONES AUXILIARES
+// HELPER FUNCTIONS
 // ==========================================
 
-// Lee el voltaje de las baterías AA (divisor de voltaje externo 1:1 en pin D4)
+// Read battery voltage using external 1:1 divisor (100k + 100k) on D4
 float readBatteryVoltage() {
     int raw = analogRead(BATTERY_ADC_PIN);
-    // En el ESP32-C6 el ADC tiene por defecto 12 bits de resolución (0-4095)
-    // El voltaje de referencia interno es de 1.1V o 3.3V atenuado (por defecto Arduino usa atenuación a 3.3V)
-    float adc_voltage = (raw / 4095.0) * 3.3; 
-    float battery_voltage = adc_voltage * 2.0; // Multiplicamos por 2 debido al divisor 1:1 (100k + 100k)
-    
-    if (battery_voltage < 0.5) return 3.0; // Si no hay lectura real, retorna valor típico de 2x AA
-    return battery_voltage;
+    float adcVoltage = (raw / 4095.0f) * 3.3f;
+    float batteryVoltage = adcVoltage * 2.0f;
+    return (batteryVoltage < 0.5f) ? 3.0f : batteryVoltage;
 }
 
-// Callback de estado de transmisión ESP-NOW
+// Callback when data is sent over ESP-NOW
 void OnDataSent(const wifi_tx_info_t *tx_info, esp_now_send_status_t status) {
     deliverySuccess = (status == ESP_NOW_SEND_SUCCESS);
     messageSent = true;
-    Serial.printf("Transmisión: %s\n", deliverySuccess ? "EXITOSA" : "FALLIDA");
 }
 
-void enterDeepSleep() {
-    Serial.println("Entrando en Deep Sleep...");
-    
-    // Configurar el bitmask de los pines de despertar (GPIOs 0, 1, 2, 3)
-    uint64_t pinMask = 0;
-    for (int i = 0; i < NUM_BUTTONS; i++) {
-        pinMask |= (1ULL << buttonPins[i]);
+// Pack and transmit ESP-NOW packet
+void sendESPNowMessage(ActionType action, uint8_t buttonIndex, int8_t rotationSteps) {
+    SwitchMessage msg;
+    msg.remote_id = REMOTE_ID;
+    msg.button_index = buttonIndex;
+    msg.action = (uint8_t)action;
+    msg.rotation_steps = rotationSteps;
+    msg.battery_voltage = readBatteryVoltage();
+
+    Serial.printf("Sending payload: Remote %d | Btn %d | Act %d | Steps %d | Bat %.2fV\n",
+                  msg.remote_id, msg.button_index, msg.action, msg.rotation_steps, msg.battery_voltage);
+
+    messageSent = false;
+    esp_err_t result = esp_now_send(centralMacAddress, (uint8_t *)&msg, sizeof(msg));
+    if (result != ESP_OK) {
+        Serial.println("Error triggering ESP-NOW transmission.");
+        return;
     }
-    
-    // Configurar EXT1 para despertar cuando CUALQUIER pin del mask se ponga en LOW (presión del switch a GND)
-    esp_sleep_enable_ext1_wakeup(pinMask, ESP_EXT1_WAKEUP_ANY_LOW);
-    
-    delay(10); // Estabilizar serial antes de dormir
-    esp_deep_sleep_start();
+
+    // Await delivery status confirmation (timeout 200ms)
+    uint32_t startWait = millis();
+    while (!messageSent && (millis() - startWait < 200)) {
+        delay(1);
+    }
 }
 
 // ==========================================
-// SETUP (Lógica de despertado)
+// SETUP & LOOP
 // ==========================================
 void setup() {
     Serial.begin(115200);
-    
-    // Identificar causa de despertado
-    esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
-    
-    // Configurar pines de botones
-    for (int i = 0; i < NUM_BUTTONS; i++) {
-        pinMode(buttonPins[i], INPUT_PULLUP);
-    }
-    
-    if (wakeup_reason != ESP_SLEEP_WAKEUP_EXT1) {
-        Serial.println("Inicio frío detectado (reinicio o inserción de baterías). Configurando y durmiendo...");
-        enterDeepSleep();
+
+    // Verify wakeup cause. Go straight to sleep on fresh boot to preserve power.
+    esp_sleep_wakeup_cause_t wakeupReason = esp_sleep_get_wakeup_cause();
+    if (wakeupReason != ESP_SLEEP_WAKEUP_EXT1) {
+        Serial.println("Cold boot detected. Entering sleep immediately.");
+        powerManager.goToSleep(wakeupPins, NUM_WAKEUP_PINS);
     }
 
-    // Identificar qué botón causó el despertar (lectura en estado LOW)
-    int pressedButton = -1;
-    delay(15); // Debounce físico inicial
-    
-    for (int i = 0; i < NUM_BUTTONS; i++) {
-        if (digitalRead(buttonPins[i]) == LOW) {
-            pressedButton = i;
-            break;
-        }
+    // Initialize inputs
+#if (CONFIG_PANEL_TYPE == PANEL_TYPE_ENCODER)
+    encoder.begin();
+#else
+    for (int i = 0; i < 4; i++) {
+        buttons[i]->begin();
     }
+#endif
 
-    if (pressedButton == -1) {
-        Serial.println("Wakeup por ruido de señal (falso despertar). Reingresando a sleep.");
-        enterDeepSleep();
-    }
-
-    Serial.printf("Despertado por Botón: D%d (GPIO %d)\n", pressedButton, buttonPins[pressedButton]);
-
-    // Inicializar Wi-Fi rápido en modo STA
+    // Initialize Wi-Fi in Station mode
     WiFi.mode(WIFI_STA);
     WiFi.disconnect();
 
     if (esp_now_init() != ESP_OK) {
-        Serial.println("Error inicializando ESP-NOW.");
-        enterDeepSleep();
+        Serial.println("Fatal: Error initializing ESP-NOW. Going to sleep.");
+        powerManager.goToSleep(wakeupPins, NUM_WAKEUP_PINS);
     }
 
-    // Registrar callback
     esp_now_register_send_cb(OnDataSent);
 
-    // Agregar el central
+    // Add Central as a peer
     esp_now_peer_info_t peerInfo = {};
     memcpy(peerInfo.peer_addr, centralMacAddress, 6);
-    peerInfo.channel = 0;  
+    peerInfo.channel = 0;
     peerInfo.encrypt = false;
 
     if (esp_now_add_peer(&peerInfo) != ESP_OK) {
-        Serial.println("Error configurando peer central.");
-        enterDeepSleep();
+        Serial.println("Error adding Central peer. Going to sleep.");
+        powerManager.goToSleep(wakeupPins, NUM_WAKEUP_PINS);
     }
 
-    // Payload de envío
-    SwitchMessage msg;
-    msg.remote_id = REMOTE_ID;
-    msg.button_index = pressedButton;
-    msg.action = 0; // Click
-    msg.battery_voltage = readBatteryVoltage();
-
-    Serial.printf("Enviando comando (Batería: %.2fV)...\n", msg.battery_voltage);
-
-    esp_err_t result = esp_now_send(centralMacAddress, (uint8_t *) &msg, sizeof(msg));
-    
-    if (result != ESP_OK) {
-        Serial.println("Error de transmisión inicial.");
-        enterDeepSleep();
-    }
-
-    // Esperar respuesta o timeout de 200ms
-    uint32_t start_wait = millis();
-    while (!messageSent && (millis() - start_wait < 200)) {
-        delay(1);
-    }
-
-    if (!messageSent) {
-        Serial.println("Timeout: Sin respuesta del central.");
-    }
-
-    // Dormir de nuevo
-    enterDeepSleep();
+    // Start activity countdown
+    powerManager.begin();
+    Serial.println("Remote active. Listening for physical input transitions.");
 }
 
 void loop() {
-    // Nunca se ejecuta
+    // 1. Process physical inputs
+#if (CONFIG_PANEL_TYPE == PANEL_TYPE_ENCODER)
+    encoder.update();
+    ActionType action;
+    int8_t steps = 0;
+    if (encoder.checkEvent(action, steps)) {
+        powerManager.feed();
+        sendESPNowMessage(action, 0, steps); // Encoder SW button acts as button 0
+    }
+#else
+    for (int i = 0; i < 4; i++) {
+        ActionType action;
+        if (buttons[i]->checkEvent(action)) {
+            powerManager.feed();
+            sendESPNowMessage(action, i, 0);
+        }
+    }
+#endif
+
+    // 2. Check for inactivity timeout to go back to sleep
+    if (powerManager.isExpired()) {
+        powerManager.goToSleep(wakeupPins, NUM_WAKEUP_PINS);
+    }
+
+    delay(5);
 }
