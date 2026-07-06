@@ -8,11 +8,10 @@
  */
 
 #include <Arduino.h>
-#include <WiFi.h>
-#include <esp_now.h>
 #include "ButtonHandler.h"
 #include "EncoderHandler.h"
 #include "PowerManager.h"
+#include "WirelessManager.h"
 #include "protocol.h"
 
 // ==========================================
@@ -49,6 +48,7 @@ const uint8_t wakeupPins[] = {0, 1, 2, 3}; // Wake up on any button press
 const uint8_t NUM_WAKEUP_PINS = sizeof(wakeupPins) / sizeof(wakeupPins[0]);
 
 PowerManager powerManager(1500); // 1.5 seconds activity timeout
+WirelessManager wirelessManager;
 
 volatile bool messageSent = false;
 volatile bool deliverySuccess = false;
@@ -84,8 +84,7 @@ void sendESPNowMessage(ActionType action, uint8_t buttonIndex, int8_t rotationSt
                   msg.remote_id, msg.button_index, msg.action, msg.rotation_steps, msg.battery_voltage);
 
     messageSent = false;
-    esp_err_t result = esp_now_send(centralMacAddress, (uint8_t *)&msg, sizeof(msg));
-    if (result != ESP_OK) {
+    if (!wirelessManager.sendPayload(centralMacAddress, (uint8_t *)&msg, sizeof(msg))) {
         Serial.println("Error triggering ESP-NOW transmission.");
         return;
     }
@@ -119,24 +118,20 @@ void setup() {
     }
 #endif
 
-    // Initialize Wi-Fi in Station mode
-    WiFi.mode(WIFI_STA);
-    WiFi.disconnect();
-
-    if (esp_now_init() != ESP_OK) {
+    // Initialize Wi-Fi and ESP-NOW
+    if (!wirelessManager.begin()) {
         Serial.println("Fatal: Error initializing ESP-NOW. Going to sleep.");
         powerManager.goToSleep(wakeupPins, NUM_WAKEUP_PINS);
     }
 
-    esp_now_register_send_cb(OnDataSent);
+    // Register callback for data transmission status
+    if (!wirelessManager.registerSendCallback(OnDataSent)) {
+        Serial.println("Error registering send callback. Going to sleep.");
+        powerManager.goToSleep(wakeupPins, NUM_WAKEUP_PINS);
+    }
 
     // Add Central as a peer
-    esp_now_peer_info_t peerInfo = {};
-    memcpy(peerInfo.peer_addr, centralMacAddress, 6);
-    peerInfo.channel = 0;
-    peerInfo.encrypt = false;
-
-    if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    if (!wirelessManager.addPeer(centralMacAddress)) {
         Serial.println("Error adding Central peer. Going to sleep.");
         powerManager.goToSleep(wakeupPins, NUM_WAKEUP_PINS);
     }
