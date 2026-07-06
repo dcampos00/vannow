@@ -11,8 +11,7 @@
 #include "ButtonHandler.h"
 #include "EncoderHandler.h"
 #include "PowerManager.h"
-#include "WirelessManager.h"
-#include "protocol.h"
+#include "RemoteSender.h"
 
 // ==========================================
 // CONFIGURATION AND TARGETS
@@ -48,53 +47,7 @@ const uint8_t wakeupPins[] = {0, 1, 2, 3}; // Wake up on any button press
 const uint8_t NUM_WAKEUP_PINS = sizeof(wakeupPins) / sizeof(wakeupPins[0]);
 
 PowerManager powerManager(1500); // 1.5 seconds activity timeout
-WirelessManager wirelessManager;
-
-volatile bool messageSent = false;
-volatile bool deliverySuccess = false;
-
-// ==========================================
-// HELPER FUNCTIONS
-// ==========================================
-
-// Read battery voltage using external 1:1 divisor (100k + 100k) on D4
-float readBatteryVoltage() {
-    int raw = analogRead(BATTERY_ADC_PIN);
-    float adcVoltage = (raw / 4095.0f) * 3.3f;
-    float batteryVoltage = adcVoltage * 2.0f;
-    return (batteryVoltage < 0.5f) ? 3.0f : batteryVoltage;
-}
-
-// Callback when data is sent over ESP-NOW
-void OnDataSent(const wifi_tx_info_t *tx_info, esp_now_send_status_t status) {
-    deliverySuccess = (status == ESP_NOW_SEND_SUCCESS);
-    messageSent = true;
-}
-
-// Pack and transmit ESP-NOW packet
-void sendESPNowMessage(ActionType action, uint8_t buttonIndex, int8_t rotationSteps) {
-    SwitchMessage msg;
-    msg.remote_id = REMOTE_ID;
-    msg.button_index = buttonIndex;
-    msg.action = (uint8_t)action;
-    msg.rotation_steps = rotationSteps;
-    msg.battery_voltage = readBatteryVoltage();
-
-    Serial.printf("Sending payload: Remote %d | Btn %d | Act %d | Steps %d | Bat %.2fV\n",
-                  msg.remote_id, msg.button_index, msg.action, msg.rotation_steps, msg.battery_voltage);
-
-    messageSent = false;
-    if (!wirelessManager.sendPayload(centralMacAddress, (uint8_t *)&msg, sizeof(msg))) {
-        Serial.println("Error triggering ESP-NOW transmission.");
-        return;
-    }
-
-    // Await delivery status confirmation (timeout 200ms)
-    uint32_t startWait = millis();
-    while (!messageSent && (millis() - startWait < 200)) {
-        delay(1);
-    }
-}
+RemoteSender remoteSender(REMOTE_ID, centralMacAddress, BATTERY_ADC_PIN);
 
 // ==========================================
 // SETUP & LOOP
@@ -118,21 +71,9 @@ void setup() {
     }
 #endif
 
-    // Initialize Wi-Fi and ESP-NOW
-    if (!wirelessManager.begin()) {
-        Serial.println("Fatal: Error initializing ESP-NOW. Going to sleep.");
-        powerManager.goToSleep(wakeupPins, NUM_WAKEUP_PINS);
-    }
-
-    // Register callback for data transmission status
-    if (!wirelessManager.registerSendCallback(OnDataSent)) {
-        Serial.println("Error registering send callback. Going to sleep.");
-        powerManager.goToSleep(wakeupPins, NUM_WAKEUP_PINS);
-    }
-
-    // Add Central as a peer
-    if (!wirelessManager.addPeer(centralMacAddress)) {
-        Serial.println("Error adding Central peer. Going to sleep.");
+    // Initialize RemoteSender (Wi-Fi, ESP-NOW, battery reading pin, and Central peer)
+    if (!remoteSender.begin()) {
+        Serial.println("Fatal: Error initializing RemoteSender. Going to sleep.");
         powerManager.goToSleep(wakeupPins, NUM_WAKEUP_PINS);
     }
 
@@ -149,14 +90,14 @@ void loop() {
     int8_t steps = 0;
     if (encoder.checkEvent(action, steps)) {
         powerManager.feed();
-        sendESPNowMessage(action, 0, steps); // Encoder SW button acts as button 0
+        remoteSender.send(action, 0, steps); // Encoder SW button acts as button 0
     }
 #else
     for (int i = 0; i < 4; i++) {
         ActionType action;
         if (buttons[i]->checkEvent(action)) {
             powerManager.feed();
-            sendESPNowMessage(action, i, 0);
+            remoteSender.send(action, i, 0);
         }
     }
 #endif
