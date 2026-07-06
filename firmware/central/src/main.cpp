@@ -68,7 +68,7 @@ struct __attribute__((packed)) SwitchMessage {
 // ==========================================
 // CALLBACK DE RECEPCIÓN ESP-NOW
 // ==========================================
-void OnDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t *incomingData, int len) {
+void OnDataRecv(const esp_now_recv_info *recv_info, const uint8_t *incomingData, int len) {
     if (len != sizeof(SwitchMessage)) {
         Serial.printf("Error: Paquete de tamaño incorrecto (%d bytes)\n", len);
         return;

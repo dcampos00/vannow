@@ -1,0 +1,19 @@
+# PlatformIO build and dependency directories
+.pio/
+.pioenvs/
+.piolibdeps/
+.clang_complete
+.gcc-flags.json
+
+# Python virtual environments
+scratch_venv/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*~
