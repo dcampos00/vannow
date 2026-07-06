@@ -8,13 +8,13 @@
  */
 
 #include <Arduino.h>
-#include <WiFi.h>
-#include <esp_now.h>
 #include "SystemController.h"
+#include "WirelessManager.h"
 #include "protocol.h"
 
-// Instantiate the global system coordinator
+// Instantiate the global system coordinator and wireless manager
 SystemController systemController;
+WirelessManager wirelessManager;
 
 // Callback when data is received over ESP-NOW
 void OnDataRecv(const esp_now_recv_info *recv_info, const uint8_t *incomingData, int len) {
@@ -38,22 +38,23 @@ void setup() {
     // Initialize physical outputs and controllers
     systemController.begin();
 
-    // Configure Wi-Fi in Station mode
-    WiFi.mode(WIFI_STA);
-    WiFi.disconnect();
-
     Serial.print("Central MAC Address: ");
     Serial.println(WiFi.macAddress());
 
-    // Initialize ESP-NOW protocol
-    if (esp_now_init() != ESP_OK) {
-        Serial.println("Fatal: Error initializing ESP-NOW. Rebooting...");
+    // Initialize Wi-Fi and ESP-NOW via WirelessManager
+    if (!wirelessManager.begin()) {
+        Serial.println("Fatal: Error initializing wireless subsystem. Rebooting...");
         delay(2000);
         ESP.restart();
     }
 
     // Register callback for incoming data
-    esp_now_register_recv_cb(OnDataRecv);
+    if (!wirelessManager.registerReceiveCallback(OnDataRecv)) {
+        Serial.println("Fatal: Error registering receive callback. Rebooting...");
+        delay(2000);
+        ESP.restart();
+    }
+
     Serial.println("System initialized. Awaiting wireless ESP-NOW commands.");
 }
 
