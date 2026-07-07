@@ -1,94 +1,686 @@
+#pragma experiment("TRAITS")
+#pragma experiment("MODULE_TEMPLATING")
+
+import is_atomic_part
+import has_designator_prefix
+import has_part_picked
+
 # Atopile (ato) Circuit Design for Van Relay Central Controller
 # This file describes the components and electrical connections for the ESP32 Central PCB.
 
+# ==============================================================================
+# COMPONENT LIBRARY DEFINITIONS
+# ==============================================================================
 
-# Define the Main Central Controller Board
-module VanCentralController:
+component MyResistor:
+    trait is_atomic_part<manufacturer="Generic", partnumber="R_0805", footprint="R_0805_2012Metric.kicad_mod", symbol="Device:R">
+    trait has_designator_prefix<prefix="R">
+    trait has_part_picked<manufacturer="Generic", partno="R_0805", supplier_partno="C17414", supplier_id="lcsc">
+    signal p1 ~ pin 1
+    signal p2 ~ pin 2
+    value = ""
+
+component MyCapacitor:
+    trait is_atomic_part<manufacturer="Generic", partnumber="C_0805", footprint="C_0805_2012Metric.kicad_mod", symbol="Device:C">
+    trait has_designator_prefix<prefix="C">
+    trait has_part_picked<manufacturer="Generic", partno="C_0805", supplier_partno="C17415", supplier_id="lcsc">
+    signal p1 ~ pin 1
+    signal p2 ~ pin 2
+    value = ""
+
+component MyLED:
+    trait is_atomic_part<manufacturer="Generic", partnumber="LED_0805", footprint="LED_0805_2012Metric.kicad_mod", symbol="Device:LED">
+    trait has_designator_prefix<prefix="D">
+    trait has_part_picked<manufacturer="Generic", partno="LED_0805", supplier_partno="C2286", supplier_id="lcsc">
+    signal anode ~ pin 1
+    signal cathode ~ pin 2
+
+component MOSFET_NChannel:
+    trait is_atomic_part<manufacturer="Generic", partnumber="SOT23_NMOS", footprint="SOT-23.kicad_mod", symbol="Device:Q_NMOS_GSD">
+    trait has_designator_prefix<prefix="Q">
+    trait has_part_picked<manufacturer="Generic", partno="SOT23_NMOS", supplier_partno="C20683", supplier_id="lcsc">
+    signal gate ~ pin 1
+    signal source ~ pin 2
+    signal drain ~ pin 3
+
+component MOSFET_PChannel:
+    trait is_atomic_part<manufacturer="Generic", partnumber="SOIC8_PMOS", footprint="SOIC-8_3.9x4.9mm_P1.27mm.kicad_mod", symbol="Device:Q_PMOS_DGS">
+    trait has_designator_prefix<prefix="Q">
+    trait has_part_picked<manufacturer="Generic", partno="SOIC8_PMOS", supplier_partno="C12345", supplier_id="lcsc">
+    # AO4407A Pinout: Pins 1,2,3 are Source; Pin 4 is Gate; Pins 5,6,7,8 are Drain
+    signal source1 ~ pin 1
+    signal source2 ~ pin 2
+    signal source3 ~ pin 3
+    signal gate ~ pin 4
+    signal drain1 ~ pin 5
+    signal drain2 ~ pin 6
+    signal drain3 ~ pin 7
+    signal drain4 ~ pin 8
+
+component PROFET_ITS4140N:
+    trait is_atomic_part<manufacturer="Infineon", partnumber="ITS4140N", footprint="SOT-223.kicad_mod", symbol="Power_Switch:ITS4140N">
+    trait has_designator_prefix<prefix="U">
+    trait has_part_picked<manufacturer="Infineon", partno="ITS4140N", supplier_partno="C115599", supplier_id="lcsc">
+    # SOT-223 Pinout: Pin 1 is IN; Pin 2 is Vbb; Pin 3 is OUT; Pin 4 is Vbb (Tab)
+    signal input ~ pin 1
+    signal Vbb1 ~ pin 2
+    signal out ~ pin 3
+    signal Vbb2 ~ pin 4
+
+component Optocoupler_PC817:
+    trait is_atomic_part<manufacturer="Generic", partnumber="PC817", footprint="DIP-4_W7.62mm.kicad_mod", symbol="Isolator:PC817">
+    trait has_designator_prefix<prefix="U">
+    trait has_part_picked<manufacturer="Generic", partno="PC817", supplier_partno="C22038", supplier_id="lcsc">
+    # DIP-4 Pinout: Pin 1 is Anode; Pin 2 is Cathode; Pin 3 is Emitter; Pin 4 is Collector
+    signal anode ~ pin 1
+    signal cathode ~ pin 2
+    signal emitter ~ pin 3
+    signal collector ~ pin 4
+
+component MyDiode:
+    trait is_atomic_part<manufacturer="Generic", partnumber="DO201_Diode", footprint="D_DO-201AD_P15.24mm_Horizontal.kicad_mod", symbol="Device:D">
+    trait has_designator_prefix<prefix="D">
+    trait has_part_picked<manufacturer="Generic", partno="DO201_Diode", supplier_partno="C12347", supplier_id="lcsc">
+    signal cathode ~ pin 1
+    signal anode ~ pin 2
+
+component Header_1x22:
+    trait is_atomic_part<manufacturer="Generic", partnumber="Header_1x22", footprint="PinSocket_1x22_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x22_Pin">
+    trait has_designator_prefix<prefix="J">
+    trait has_part_picked<manufacturer="Generic", partno="Header_1x22", supplier_partno="C12348", supplier_id="lcsc">
+    signal pin_1 ~ pin 1; signal pin_2 ~ pin 2; signal pin_3 ~ pin 3; signal pin_4 ~ pin 4; signal pin_5 ~ pin 5
+    signal pin_6 ~ pin 6; signal pin_7 ~ pin 7; signal pin_8 ~ pin 8; signal pin_9 ~ pin 9; signal pin_10 ~ pin 10
+    signal pin_11 ~ pin 11; signal pin_12 ~ pin 12; signal pin_13 ~ pin 13; signal pin_14 ~ pin 14; signal pin_15 ~ pin 15
+    signal pin_16 ~ pin 16; signal pin_17 ~ pin 17; signal pin_18 ~ pin 18; signal pin_19 ~ pin 19; signal pin_20 ~ pin 20
+    signal pin_21 ~ pin 21; signal pin_22 ~ pin 22
+
+component Header_1x2:
+    trait is_atomic_part<manufacturer="Generic", partnumber="Header_1x2", footprint="PinSocket_1x02_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x02_Pin">
+    trait has_designator_prefix<prefix="J">
+    trait has_part_picked<manufacturer="Generic", partno="Header_1x2", supplier_partno="C12349", supplier_id="lcsc">
+    signal pin_1 ~ pin 1
+    signal pin_2 ~ pin 2
+
+component Header_1x5:
+    trait is_atomic_part<manufacturer="Generic", partnumber="Header_1x5", footprint="PinSocket_1x05_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x05_Pin">
+    trait has_designator_prefix<prefix="J">
+    trait has_part_picked<manufacturer="Generic", partno="Header_1x5", supplier_partno="C12350", supplier_id="lcsc">
+    signal pin_1 ~ pin 1
+    signal pin_2 ~ pin 2
+    signal pin_3 ~ pin 3
+    signal pin_4 ~ pin 4
+    signal pin_5 ~ pin 5
+
+component Header_1x4:
+    trait is_atomic_part<manufacturer="Generic", partnumber="Header_1x4", footprint="PinSocket_1x04_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x04_Pin">
+    trait has_designator_prefix<prefix="J">
+    trait has_part_picked<manufacturer="Generic", partno="Header_1x4", supplier_partno="C12353", supplier_id="lcsc">
+    signal pin_1 ~ pin 1
+    signal pin_2 ~ pin 2
+    signal pin_3 ~ pin 3
+    signal pin_4 ~ pin 4
+
+component ScrewTerminal_2Pin:
+    trait is_atomic_part<manufacturer="Phoenix_Contact", partnumber="MPT_0.5_2_2.54", footprint="TerminalBlock_Phoenix_MPT-0,5-2-2.54_1x02_P2.54mm_Horizontal.kicad_mod", symbol="Connector:Screw_Terminal_01x02">
+    trait has_designator_prefix<prefix="J">
+    trait has_part_picked<manufacturer="Phoenix_Contact", partno="MPT_0.5_2_2.54", supplier_partno="C12351", supplier_id="lcsc">
+    signal pin_1 ~ pin 1
+    signal pin_2 ~ pin 2
+
+component ScrewTerminal_4Pin:
+    trait is_atomic_part<manufacturer="Phoenix_Contact", partnumber="MPT_0.5_4_2.54", footprint="TerminalBlock_Phoenix_MPT-0,5-4-2.54_1x04_P2.54mm_Horizontal.kicad_mod", symbol="Connector:Screw_Terminal_01x04">
+    trait has_designator_prefix<prefix="J">
+    trait has_part_picked<manufacturer="Phoenix_Contact", partno="MPT_0.5_4_2.54", supplier_partno="C12352", supplier_id="lcsc">
+    signal pin_1 ~ pin 1
+    signal pin_2 ~ pin 2
+    signal pin_3 ~ pin 3
+    signal pin_4 ~ pin 4
+
+# ==============================================================================
+# SUB-MODULE SCHEMATIC DEFINITIONS
+# ==============================================================================
+
+# ESP32-S3 DevKit Socket Module
+module LonelyBinary_ESP32S3_N16R8:
+    left_header = new Header_1x22
+    right_header = new Header_1x22
+
+    # Power Rails
+    signal V3P3 ~ left_header.pin_1
+    signal VIN ~ right_header.pin_1
+    signal GND ~ right_header.pin_2
+
+    # Map signals to physical headers as per S3 DevKitC-1 pinout
+    # J1 (Left Row)
+    signal GPIO4 ~ left_header.pin_4
+    signal GPIO5 ~ left_header.pin_5
+    signal GPIO6 ~ left_header.pin_6
+    signal GPIO7 ~ left_header.pin_7
+    signal GPIO15 ~ left_header.pin_8
+    signal GPIO16 ~ left_header.pin_9
+    signal GPIO17 ~ left_header.pin_10
+    signal GPIO18 ~ left_header.pin_11
+    signal GPIO12 ~ left_header.pin_18
+    signal GPIO13 ~ left_header.pin_19
+    signal GPIO14 ~ left_header.pin_20
+
+    # J3 (Right Row)
+    signal GPIO1 ~ right_header.pin_5
+    signal GPIO2 ~ right_header.pin_6
+    signal GPIO21 ~ right_header.pin_19
+    signal GPIO20 ~ right_header.pin_20
+    signal GPIO19 ~ right_header.pin_21
+
+    # Connect secondary grounds together for reliable return paths
+    left_header.pin_22 ~ GND
+    right_header.pin_22 ~ GND
+
+# MP1584EN Buck Regulator Socket Module
+module MP1584EN_Buck_Module:
+    vin_header = new Header_1x2
+    vout_header = new Header_1x2
+
+    signal vin_12v ~ vin_header.pin_1
+    signal vout_5v ~ vout_header.pin_1
+    signal gnd
+
+    vin_header.pin_2 ~ gnd
+    vout_header.pin_2 ~ gnd
+
+# YYNMOS-4 4-Channel MOSFET Module Socket
+module YYNMOS_4_Module:
+    ctrl_header = new Header_1x5
+    pwr_in_header = new Header_1x2
+    out1_header = new Header_1x2
+    out2_header = new Header_1x2
+    out3_header = new Header_1x2
+    out4_header = new Header_1x2
+
+    # Signals
+    signal gnd ~ ctrl_header.pin_1
+    signal pwm1 ~ ctrl_header.pin_2
+    signal pwm2 ~ ctrl_header.pin_3
+    signal pwm3 ~ ctrl_header.pin_4
+    signal pwm4 ~ ctrl_header.pin_5
+
+    signal power_12v ~ pwr_in_header.pin_1
+    signal power_gnd ~ pwr_in_header.pin_2
+
+    signal out1_pos ~ out1_header.pin_1
+    signal out1_neg ~ out1_header.pin_2
+
+    signal out2_pos ~ out2_header.pin_1
+    signal out2_neg ~ out2_header.pin_2
+
+    signal out3_pos ~ out3_header.pin_1
+    signal out3_neg ~ out3_header.pin_2
+
+    signal out4_pos ~ out4_header.pin_1
+    signal out4_neg ~ out4_header.pin_2
+
+# High-Side P-Channel MOSFET Switch Module (Discrete)
+module PChannelHighSideSwitch:
+    signal control
+    signal power_in
+    signal power_out
+    signal gnd
+
+    q_driver = new MOSFET_NChannel
+    q_pass = new MOSFET_PChannel
+    r_gate = new MyResistor
+    r_pulldown = new MyResistor
+    r_pullup = new MyResistor
+
+    r_gate.value = "220ohm"
+    r_pulldown.value = "10kohm"
+    r_pullup.value = "10kohm"
+
+    # N-channel driver gate connection
+    control ~ r_gate.p1
+    r_gate.p2 ~ q_driver.gate
+
+    # Driver source and pulldown to GND
+    q_driver.source ~ gnd
+    control ~ r_pulldown.p1
+    r_pulldown.p2 ~ gnd
+
+    # Driver drain pulls P-channel gate to GND when active
+    q_driver.drain ~ q_pass.gate
+    r_pullup.p1 ~ q_pass.gate
+    r_pullup.p2 ~ power_in
+
+    # P-channel connections
+    q_pass.source1 ~ power_in
+    q_pass.source2 ~ power_in
+    q_pass.source3 ~ power_in
+
+    q_pass.drain1 ~ power_out
+    q_pass.drain2 ~ power_out
+    q_pass.drain3 ~ power_out
+    q_pass.drain4 ~ power_out
+
+# High-Side Smart PROFET Switch Module (Discrete)
+module SmartHighSideSwitch:
+    signal control
+    signal power_in
+    signal power_out
+    signal gnd
+
+    u_profet = new PROFET_ITS4140N
+    q_driver = new MOSFET_NChannel
+    r_gate = new MyResistor
+    r_pulldown = new MyResistor
+
+    r_gate.value = "220ohm"
+    r_pulldown.value = "10kohm"
+
+    # Logic-level driver for the active-low current-controlled input
+    control ~ r_gate.p1
+    r_gate.p2 ~ q_driver.gate
+    q_driver.source ~ gnd
+    control ~ r_pulldown.p1
+    r_pulldown.p2 ~ gnd
+
+    # Pulls IN pin to GND when GPIO is HIGH
+    q_driver.drain ~ u_profet.input
+
+    # PROFET connections
+    power_in ~ u_profet.Vbb1
+    power_in ~ u_profet.Vbb2
+    u_profet.out ~ power_out
+
+# Optocoupler Isolation Switch Module
+module OptocouplerIsolation:
+    signal control
+    signal gnd
+    signal out_collector
+    signal out_emitter
+
+    u_opto = new Optocoupler_PC817
+    r_limit = new MyResistor
+
+    r_limit.value = "330ohm"
+
+    control ~ r_limit.p1
+    r_limit.p2 ~ u_opto.anode
+    gnd ~ u_opto.cathode
+
+    out_collector ~ u_opto.collector
+    out_emitter ~ u_opto.emitter
+
+# Analog Resistor Divider Battery Sensor Module
+module AnalogVoltageDivider:
+    signal v_bat
+    signal v_out
+    signal gnd
+
+    r_high = new MyResistor
+    r_low = new MyResistor
+    c_filter = new MyCapacitor
+
+    r_high.value = "100kohm"
+    r_low.value = "27kohm"
+    c_filter.value = "100nF"
+
+    v_bat ~ r_high.p1
+    r_high.p2 ~ v_out
+    v_out ~ r_low.p1
+    r_low.p2 ~ gnd
+
+    v_out ~ c_filter.p1
+    c_filter.p2 ~ gnd
+
+
+# ==============================================================================
+# MAIN SYSTEM CONTROLLER BOARD
+# ==============================================================================
+
+component PROFET_BTS5008_1EKB:
+    trait is_atomic_part<manufacturer="Infineon", partnumber="BTS5008-1EKB", footprint="SOIC-14-1EP_3.9x8.7mm_P1.27mm_EP4.3x4.7mm.kicad_mod", symbol="Power_Switch:BTS5008-1EKB">
+    trait has_designator_prefix<prefix="U">
+    trait has_part_picked<manufacturer="Infineon", partno="BTS5008-1EKB", supplier_partno="C318218", supplier_id="lcsc">
+    signal gnd ~ pin 3
+    signal input ~ pin 4
+    signal den ~ pin 5
+    signal current_sense ~ pin 6
+    signal out ~ pin 10
+    out ~ pin 11
+    out ~ pin 12
+    signal vs ~ pin 15
+
+# High-Side Smart PROFET Switch Module (BTS5008-1EKB)
+module HighCurrentSmartHighSideSwitch:
+    signal control
+    signal power_in
+    signal power_out
+    signal gnd
+
+    u_profet = new PROFET_BTS5008_1EKB
+    r_gate = new MyResistor
+    r_pulldown = new MyResistor
+    r_sense = new MyResistor
+
+    r_gate.value = "220ohm"
+    r_pulldown.value = "10kohm"
+    r_sense.value = "1.2kohm"
+
+    # Connect ESP32 control directly to IN pin via protection resistor
+    control ~ r_gate.p1
+    r_gate.p2 ~ u_profet.input
+    control ~ r_pulldown.p1
+    r_pulldown.p2 ~ gnd
+
+    # Power and GND connections
+    power_in ~ u_profet.vs
+    u_profet.out ~ power_out
+    u_profet.gnd ~ gnd
+    
+    # Disable diagnostics for simplicity
+    u_profet.den ~ gnd
+    u_profet.current_sense ~ r_sense.p1
+    r_sense.p2 ~ gnd
+
+
+# ==============================================================================
+# MAIN SYSTEM CONTROLLER BOARD - INTEGRATED PROFET DESIGN
+# ==============================================================================
+
+module VanCentralControllerPROFET:
     # ----------------------------------------
-    # Signals (Nets)
+    # Global Signal Rails
     # ----------------------------------------
     signal gnd
     signal v_bat_12v
     signal v_mcu_5v
     signal v_mcu_3v3
 
-    # ----------------------------------------
-    # Power Supply Stage
-    # ----------------------------------------
-    buck_converter = new BuckRegulator_12V_5V
-    v_bat_12v ~ buck_converter.vin_12v
-    gnd ~ buck_converter.gnd
-    v_mcu_5v ~ buck_converter.vout_5v
+    # Main Power Input Connector (Switched 12V from battery fuse panel)
+    pwr_terminal = new ScrewTerminal_2Pin
+    v_bat_12v ~ pwr_terminal.pin_1
+    gnd ~ pwr_terminal.pin_2
 
     # ----------------------------------------
-    # MCU (ESP32 DevKit Node)
+    # Power Supply & Regulators
     # ----------------------------------------
-    esp32 = new ESP32_DevKit
-    v_mcu_5v ~ esp32.VIN     # Power ESP32 via VIN pin (5V)
+    buck = new MP1584EN_Buck_Module
+    v_bat_12v ~ buck.vin_12v
+    gnd ~ buck.gnd
+    v_mcu_5v ~ buck.vout_5v
+
+    # ----------------------------------------
+    # MCU & Sockets
+    # ----------------------------------------
+    esp32 = new LonelyBinary_ESP32S3_N16R8
+    v_mcu_5v ~ esp32.VIN
     gnd ~ esp32.GND
-    v_mcu_3v3 ~ esp32.V3P3   # 3.3V out from ESP32 regulator (for logic pull-ups)
+    v_mcu_3v3 ~ esp32.V3P3
 
     # ----------------------------------------
-    # 12V DC Loads: Pump & Aux Outputs (PROFETs)
+    # High-Side Smart LED Dimming Zones 1-4 (BTS5008-1EKB)
     # ----------------------------------------
-    # Channel 5: Water Pump (Bomba de Agua)
-    bomba_switch = new PROFET_HighSideSwitch
-    v_bat_12v ~ bomba_switch.power_in
-    gnd ~ bomba_switch.gnd
-    esp32.GPIO25 ~ bomba_switch.control_in
-    # bomba_switch.power_out connects to the 12V Water Pump load
+    led_zone1_stage = new HighCurrentSmartHighSideSwitch
+    led_zone2_stage = new HighCurrentSmartHighSideSwitch
+    led_zone3_stage = new HighCurrentSmartHighSideSwitch
+    led_zone4_stage = new HighCurrentSmartHighSideSwitch
 
-    # Channel 6: Aux Outlet 1 (Tomacorriente 12V)
-    aux1_switch = new PROFET_HighSideSwitch
-    v_bat_12v ~ aux1_switch.power_in
-    gnd ~ aux1_switch.gnd
-    esp32.GPIO26 ~ aux1_switch.control_in
+    # Control Lines (PWM)
+    esp32.GPIO12 ~ led_zone1_stage.control
+    esp32.GPIO13 ~ led_zone2_stage.control
+    esp32.GPIO14 ~ led_zone3_stage.control
+    esp32.GPIO15 ~ led_zone4_stage.control
+
+    # Power and GND
+    v_bat_12v ~ led_zone1_stage.power_in
+    gnd ~ led_zone1_stage.gnd
+    v_bat_12v ~ led_zone2_stage.power_in
+    gnd ~ led_zone2_stage.gnd
+    v_bat_12v ~ led_zone3_stage.power_in
+    gnd ~ led_zone3_stage.gnd
+    v_bat_12v ~ led_zone4_stage.power_in
+    gnd ~ led_zone4_stage.gnd
+
+    # Dimmable LED Zones 1-4 (4-Pin SPDT Overrides)
+    led_zone1_terminal = new ScrewTerminal_4Pin
+    led_zone1_stage.power_out ~ led_zone1_terminal.pin_1 # AUTO
+    v_bat_12v ~ led_zone1_terminal.pin_2 # 12V
+    gnd ~ led_zone1_terminal.pin_4 # LOAD GND return
+
+    led_zone2_terminal = new ScrewTerminal_4Pin
+    led_zone2_stage.power_out ~ led_zone2_terminal.pin_1 # AUTO
+    v_bat_12v ~ led_zone2_terminal.pin_2 # 12V
+    gnd ~ led_zone2_terminal.pin_4 # LOAD GND return
+
+    led_zone3_terminal = new ScrewTerminal_4Pin
+    led_zone3_stage.power_out ~ led_zone3_terminal.pin_1 # AUTO
+    v_bat_12v ~ led_zone3_terminal.pin_2 # 12V
+    gnd ~ led_zone3_terminal.pin_4 # LOAD GND return
+
+    led_zone4_terminal = new ScrewTerminal_4Pin
+    led_zone4_stage.power_out ~ led_zone4_terminal.pin_1 # AUTO
+    v_bat_12v ~ led_zone4_terminal.pin_2 # 12V
+    gnd ~ led_zone4_terminal.pin_4 # LOAD GND return
 
     # ----------------------------------------
-    # Signal Switching (Optocoupler Outputs)
+    # Water Pump (GPIO 4 - Smart PROFET BTS5008 + Override)
     # ----------------------------------------
-    # Channel 10: Inverter Remote Switch (Victron Multiplus II)
-    inverter_ctrl = new Optocoupler_Control
-    esp32.GPIO21 ~ inverter_ctrl.input_anode
-    gnd ~ inverter_ctrl.input_cathode
-    v_mcu_3v3 ~ inverter_ctrl.input_pullup
-    # inverter_ctrl.output_collector & output_emitter connect to the Multiplus remote port
+    pump_stage = new HighCurrentSmartHighSideSwitch
+    esp32.GPIO4 ~ pump_stage.control
+    v_bat_12v ~ pump_stage.power_in
+    gnd ~ pump_stage.gnd
+
+    # Flyback diode for pump protection
+    pump_diode = new MyDiode
+    pump_stage.power_out ~ pump_diode.cathode # Cathode
+    gnd ~ pump_diode.anode # Anode
+
+    # 4-pin SPDT Override Terminal Block
+    pump_terminal = new ScrewTerminal_4Pin
+    pump_stage.power_out ~ pump_terminal.pin_1 # AUTO
+    v_bat_12v ~ pump_terminal.pin_2 # 12V
+    gnd ~ pump_terminal.pin_4 # LOAD GND return
+
+    # ----------------------------------------
+    # Aux Outlets 1-3 (GPIO 5, 6, 7 - Smart PROFETs)
+    # ----------------------------------------
+    # Aux Outlet 1 (GPIO 5)
+    aux1_stage = new HighCurrentSmartHighSideSwitch
+    esp32.GPIO5 ~ aux1_stage.control
+    v_bat_12v ~ aux1_stage.power_in
+    gnd ~ aux1_stage.gnd
+
+    aux1_terminal = new ScrewTerminal_2Pin
+    aux1_stage.power_out ~ aux1_terminal.pin_1
+    gnd ~ aux1_terminal.pin_2
+
+    # Aux Outlet 2 (GPIO 6)
+    aux2_stage = new HighCurrentSmartHighSideSwitch
+    esp32.GPIO6 ~ aux2_stage.control
+    v_bat_12v ~ aux2_stage.power_in
+    gnd ~ aux2_stage.gnd
+
+    aux2_terminal = new ScrewTerminal_2Pin
+    aux2_stage.power_out ~ aux2_terminal.pin_1
+    gnd ~ aux2_terminal.pin_2
+
+    # Aux Outlet 3 (GPIO 7)
+    aux3_stage = new HighCurrentSmartHighSideSwitch
+    esp32.GPIO7 ~ aux3_stage.control
+    v_bat_12v ~ aux3_stage.power_in
+    gnd ~ aux3_stage.gnd
+
+    aux3_terminal = new ScrewTerminal_2Pin
+    aux3_stage.power_out ~ aux3_terminal.pin_1
+    gnd ~ aux3_terminal.pin_2
+
+    # ----------------------------------------
+    # Ceiling Fan (GPIO 19 - Discrete MOSFET)
+    # ----------------------------------------
+    fan_stage = new PChannelHighSideSwitch
+    esp32.GPIO19 ~ fan_stage.control
+    v_bat_12v ~ fan_stage.power_in
+    gnd ~ fan_stage.gnd
+
+    fan_diode = new MyDiode
+    fan_stage.power_out ~ fan_diode.cathode # Cathode
+    gnd ~ fan_diode.anode # Anode
+
+    fan_terminal = new ScrewTerminal_2Pin
+    fan_stage.power_out ~ fan_terminal.pin_1
+    gnd ~ fan_terminal.pin_2
+
+    # ----------------------------------------
+    # Signal Switching: Optocouplers (GPIO 21, 20)
+    # ----------------------------------------
+    # Inverter (GPIO 21)
+    inverter_opto = new OptocouplerIsolation
+    esp32.GPIO21 ~ inverter_opto.control
+    gnd ~ inverter_opto.gnd
+
+    inverter_terminal = new ScrewTerminal_2Pin
+    inverter_opto.out_collector ~ inverter_terminal.pin_1
+    inverter_opto.out_emitter ~ inverter_terminal.pin_2
+
+    # DC-DC Charger (GPIO 20)
+    dcdc_opto = new OptocouplerIsolation
+    esp32.GPIO20 ~ dcdc_opto.control
+    gnd ~ dcdc_opto.gnd
+
+    dcdc_terminal = new ScrewTerminal_2Pin
+    dcdc_opto.out_collector ~ dcdc_terminal.pin_1
+    dcdc_opto.out_emitter ~ dcdc_terminal.pin_2
+
+    # ----------------------------------------
+    # Battery Telemetry (GPIO 1)
+    # ----------------------------------------
+    voltage_sensor = new AnalogVoltageDivider
+    v_bat_12v ~ voltage_sensor.v_bat
+    gnd ~ voltage_sensor.gnd
+    esp32.GPIO1 ~ voltage_sensor.v_out
+
+    # ----------------------------------------
+    # Status Indicators
+    # ----------------------------------------
+    power_led = new MyLED
+    power_led_resistor = new MyResistor
+    power_led_resistor.value = "330ohm"
+    v_mcu_3v3 ~ power_led_resistor.p1
+    power_led_resistor.p2 ~ power_led.anode
+    gnd ~ power_led.cathode
+
+    cabin_led = new MyLED
+    cabin_led_resistor = new MyResistor
+    cabin_led_resistor.value = "330ohm"
+    esp32.GPIO2 ~ cabin_led_resistor.p1
+    cabin_led_resistor.p2 ~ cabin_led.anode
+    gnd ~ cabin_led.cathode
+
+    remote_led = new MyLED
+    remote_led_resistor = new MyResistor
+    remote_led_resistor.value = "330ohm"
+    esp32.GPIO16 ~ remote_led_resistor.p1
+    remote_led_resistor.p2 ~ remote_led.anode
+    gnd ~ remote_led.cathode
+
 
 # ==============================================================================
-# PLACEHOLDER PART MODULES
-# Define the internal structures of our custom modules for compiler reference
+# MAIN SYSTEM CONTROLLER BOARD - MODULAR CONNECTOR DESIGN
 # ==============================================================================
 
-module ESP32_DevKit:
-    signal VIN
-    signal GND
-    signal V3P3
-    signal GPIO12
-    signal GPIO13
-    signal GPIO14
-    signal GPIO27
-    signal GPIO25
-    signal GPIO26
-    signal GPIO32
-    signal GPIO33
-    signal GPIO19
-    signal GPIO21
-    signal GPIO22
-
-module PROFET_HighSideSwitch:
-    signal power_in
-    signal power_out
-    signal control_in
+module VanCentralControllerModular:
+    # ----------------------------------------
+    # Global Signal Rails
+    # ----------------------------------------
     signal gnd
+    signal v_bat_12v
+    signal v_mcu_5v
+    signal v_mcu_3v3
 
-module BuckRegulator_12V_5V:
-    signal vin_12v
-    signal vout_5v
-    signal gnd
+    # Main Power Input Connector (Switched 12V from battery fuse panel)
+    pwr_terminal = new ScrewTerminal_2Pin
+    v_bat_12v ~ pwr_terminal.pin_1
+    gnd ~ pwr_terminal.pin_2
 
-module Optocoupler_Control:
-    signal input_anode
-    signal input_cathode
-    signal input_pullup
-    signal output_collector
-    signal output_emitter
+    # ----------------------------------------
+    # Power Supply & Regulators
+    # ----------------------------------------
+    buck = new MP1584EN_Buck_Module
+    v_bat_12v ~ buck.vin_12v
+    gnd ~ buck.gnd
+    v_mcu_5v ~ buck.vout_5v
+
+    # ----------------------------------------
+    # MCU & Sockets
+    # ----------------------------------------
+    esp32 = new LonelyBinary_ESP32S3_N16R8
+    v_mcu_5v ~ esp32.VIN
+    gnd ~ esp32.GND
+    v_mcu_3v3 ~ esp32.V3P3
+
+    # ----------------------------------------
+    # MOSFET Module 1: LED Dimming Zones 1-4 (YYNMOS-4 Control Header)
+    # ----------------------------------------
+    mosfet_card1_ctrl = new Header_1x5
+    gnd ~ mosfet_card1_ctrl.pin_1
+    esp32.GPIO12 ~ mosfet_card1_ctrl.pin_2 # PWM 1
+    esp32.GPIO13 ~ mosfet_card1_ctrl.pin_3 # PWM 2
+    esp32.GPIO14 ~ mosfet_card1_ctrl.pin_4 # PWM 3
+    esp32.GPIO15 ~ mosfet_card1_ctrl.pin_5 # PWM 4
+
+    # ----------------------------------------
+    # MOSFET Module 2: Pump, Fan, Aux 1, Aux 2 (YYNMOS-4 Control Header)
+    # ----------------------------------------
+    mosfet_card2_ctrl = new Header_1x5
+    gnd ~ mosfet_card2_ctrl.pin_1
+    esp32.GPIO4 ~ mosfet_card2_ctrl.pin_2  # Pump Control
+    esp32.GPIO19 ~ mosfet_card2_ctrl.pin_3 # Fan Control
+    esp32.GPIO5 ~ mosfet_card2_ctrl.pin_4  # Aux 1 Control
+    esp32.GPIO6 ~ mosfet_card2_ctrl.pin_5  # Aux 2 Control
+
+    # ----------------------------------------
+    # MOSFET Module 3: Aux 3 (Single-Channel MOSFET Control Header)
+    # ----------------------------------------
+    mosfet_aux3_ctrl = new Header_1x2
+    gnd ~ mosfet_aux3_ctrl.pin_1
+    esp32.GPIO7 ~ mosfet_aux3_ctrl.pin_2   # Aux 3 Control
+
+    # ----------------------------------------
+    # Optocoupler Module: Inverter & DC-DC Charger (PC817 Control Header)
+    # ----------------------------------------
+    opto_card_ctrl = new Header_1x4
+    gnd ~ opto_card_ctrl.pin_1
+    esp32.GPIO21 ~ opto_card_ctrl.pin_2    # Inverter Control
+    esp32.GPIO20 ~ opto_card_ctrl.pin_3    # DC-DC Charger Control
+    # pin_4 left NC
+
+    # ----------------------------------------
+    # Battery Telemetry (GPIO 1)
+    # ----------------------------------------
+    voltage_sensor = new AnalogVoltageDivider
+    v_bat_12v ~ voltage_sensor.v_bat
+    gnd ~ voltage_sensor.gnd
+    esp32.GPIO1 ~ voltage_sensor.v_out
+
+    # ----------------------------------------
+    # Status Indicators
+    # ----------------------------------------
+    power_led = new MyLED
+    power_led_resistor = new MyResistor
+    power_led_resistor.value = "330ohm"
+    v_mcu_3v3 ~ power_led_resistor.p1
+    power_led_resistor.p2 ~ power_led.anode
+    gnd ~ power_led.cathode
+
+    cabin_led = new MyLED
+    cabin_led_resistor = new MyResistor
+    cabin_led_resistor.value = "330ohm"
+    esp32.GPIO2 ~ cabin_led_resistor.p1
+    cabin_led_resistor.p2 ~ cabin_led.anode
+    gnd ~ cabin_led.cathode
+
+    remote_led = new MyLED
+    remote_led_resistor = new MyResistor
+    remote_led_resistor.value = "330ohm"
+    esp32.GPIO16 ~ remote_led_resistor.p1
+    remote_led_resistor.p2 ~ remote_led.anode
+    gnd ~ remote_led.cathode
+

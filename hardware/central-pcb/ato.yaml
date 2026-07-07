@@ -5,5 +5,11 @@ paths:
   layout: ./layouts
 
 builds:
-  default:
-    entry: central.ato:VanCentralController
+  profet:
+    entry: central.ato:VanCentralControllerPROFET
+    paths:
+      layout: ./layouts/profet
+  modular:
+    entry: central.ato:VanCentralControllerModular
+    paths:
+      layout: ./layouts/modular
