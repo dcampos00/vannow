@@ -70,5 +70,7 @@ bool RemoteSender::send(ActionType action, uint8_t buttonIndex, int8_t rotationS
         delay(1);
     }
 
-    return _deliverySuccess;
+    bool delivered = _messageSent && _deliverySuccess;
+    _messageSent = false;
+    return delivered;
 }
