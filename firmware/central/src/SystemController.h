@@ -30,8 +30,7 @@ private:
 
     // Configuration parameters for main battery reading
     static constexpr uint8_t BATTERY_ADC_PIN = 1;
-    static constexpr float ADC_VOLTAGE_REF = 3.1f; // Max ADC scale after calibration
-    static constexpr float DIVIDER_RATIO = (100.0f + 27.0f) / 27.0f; // Divisor resistor values: 100k and 27k
+    static constexpr float DIVIDER_RATIO = (100.0f + 18.0f) / 18.0f; // Divisor resistor values: 100k and 18k
 };
 
 #endif // SYSTEM_CONTROLLER_H

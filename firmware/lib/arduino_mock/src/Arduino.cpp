@@ -37,6 +37,16 @@ int analogRead(uint8_t pin) {
     return 0;
 }
 
+uint32_t analogReadMilliVolts(uint8_t pin) {
+    if (pin < 128) {
+        // Map 0-4095 to 0-3300 mV (standard 11dB attenuation range)
+        return (uint32_t)((mockAnalogValues[pin] / 4095.0f) * 3300.0f);
+    }
+    return 0;
+}
+
+void analogSetPinAttenuation(uint8_t pin, adc_attenuation_t atten) {}
+
 void ledcSetup(uint8_t channel, uint32_t freq, uint8_t resolution) {}
 void ledcAttachPin(uint8_t pin, uint8_t channel) {}
 void ledcWrite(uint8_t pin, uint32_t duty) {

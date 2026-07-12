@@ -24,6 +24,9 @@ void pinMode(uint8_t pin, uint8_t mode);
 void digitalWrite(uint8_t pin, uint8_t val);
 int digitalRead(uint8_t pin);
 int analogRead(uint8_t pin);
+uint32_t analogReadMilliVolts(uint8_t pin);
+typedef enum { ADC_0db, ADC_2_5db, ADC_6db, ADC_11db } adc_attenuation_t;
+void analogSetPinAttenuation(uint8_t pin, adc_attenuation_t atten);
 
 // LEDC stubs (mocked)
 void ledcSetup(uint8_t channel, uint32_t freq, uint8_t resolution);

@@ -213,7 +213,6 @@ void test_system_controller_basics(void) {
     SystemController controller;
     controller.begin();
     
-    TEST_ASSERT_EQUAL(INPUT, ArduinoMock::getPinMode(1));
     TEST_ASSERT_EQUAL(OUTPUT, ArduinoMock::getPinMode(4));
     
     uint8_t entryMac[6] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
@@ -266,7 +265,7 @@ void test_system_controller_battery_adc(void) {
     
     ArduinoMock::setAnalogValue(1, 2048);
     float voltage = controller.readMainBatteryVoltage();
-    TEST_ASSERT_FLOAT_WITHIN(0.1f, 7.29f, voltage);
+    TEST_ASSERT_FLOAT_WITHIN(0.1f, 10.816f, voltage);
 }
 
 int main(int argc, char **argv) {

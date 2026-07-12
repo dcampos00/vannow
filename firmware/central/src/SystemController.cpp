@@ -33,8 +33,8 @@ void SystemController::begin() {
         Serial.printf("Configured channel: %s (Pin %d)\n", _channels[i]->getName(), _channels[i]->getPin());
     }
 
-    // Initialize battery ADC pin
-    pinMode(BATTERY_ADC_PIN, INPUT);
+    // Configure battery ADC attenuation for 11dB (0-3.3V range)
+    analogSetPinAttenuation(BATTERY_ADC_PIN, ADC_11db);
 }
 
 void SystemController::update() {
@@ -93,8 +93,7 @@ void SystemController::dispatchMessage(const uint8_t* senderMac, const SwitchMes
 }
 
 float SystemController::readMainBatteryVoltage() {
-    int raw = analogRead(BATTERY_ADC_PIN);
-    // ESP32-S3 defaults to 12-bit resolution (0-4095)
-    float adcVoltage = (raw / 4095.0f) * ADC_VOLTAGE_REF;
+    uint32_t mv = analogReadMilliVolts(BATTERY_ADC_PIN);
+    float adcVoltage = mv / 1000.0f;
     return adcVoltage * DIVIDER_RATIO;
 }

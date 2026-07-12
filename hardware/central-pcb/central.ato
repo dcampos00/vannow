@@ -84,6 +84,13 @@ component MyDiode:
     signal cathode ~ pin 1
     signal anode ~ pin 2
 
+component ZenerDiode:
+    trait is_atomic_part<manufacturer="Nexperia", partnumber="BZX84-C3V3", footprint="SOT-23.kicad_mod", symbol="Device:D_Zener">
+    trait has_designator_prefix<prefix="D">
+    trait has_part_picked<manufacturer="Nexperia", partno="BZX84-C3V3", supplier_partno="C2168", supplier_id="lcsc">
+    signal anode ~ pin 1
+    signal cathode ~ pin 3
+
 component Header_1x22:
     trait is_atomic_part<manufacturer="Generic", partnumber="Header_1x22", footprint="PinSocket_1x22_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x22_Pin">
     trait has_designator_prefix<prefix="J">
@@ -316,19 +323,29 @@ module AnalogVoltageDivider:
 
     r_high = new MyResistor
     r_low = new MyResistor
+    r_series = new MyResistor
     c_filter = new MyCapacitor
+    zener = new ZenerDiode
 
     r_high.value = "100kohm"
-    r_low.value = "27kohm"
+    r_low.value = "18kohm"
+    r_series.value = "1kohm"
     c_filter.value = "100nF"
 
+    signal v_divider
     v_bat ~ r_high.p1
-    r_high.p2 ~ v_out
-    v_out ~ r_low.p1
+    r_high.p2 ~ v_divider
+    v_divider ~ r_low.p1
     r_low.p2 ~ gnd
 
-    v_out ~ c_filter.p1
+    v_divider ~ c_filter.p1
     c_filter.p2 ~ gnd
+
+    v_divider ~ r_series.p1
+    r_series.p2 ~ v_out
+
+    zener.cathode ~ v_out
+    zener.anode ~ gnd
 
 
 # ==============================================================================
