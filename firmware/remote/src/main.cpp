@@ -34,7 +34,7 @@ uint8_t centralMacAddress[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
 
 #if (CONFIG_PANEL_TYPE == PANEL_TYPE_ENCODER)
 EncoderHandler encoder(0, 1, 2); // Pin A = D0 (GPIO 0), Pin B = D1 (GPIO 1), Pin SW = D2 (GPIO 2)
-const uint8_t wakeupPins[] = {0, 2}; // Wake up on rotation (GPIO 0) or button click (GPIO 2)
+const uint8_t wakeupPins[] = {0, 1, 2}; // Wake up on rotation (GPIO 0/1) or button click (GPIO 2)
 #else
 ButtonHandler btn0(0, 0); // D0
 ButtonHandler btn1(1, 1); // D1
