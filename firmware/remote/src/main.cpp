@@ -30,7 +30,7 @@ uint8_t centralMacAddress[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
 // ==========================================
 // PIN DEFINITIONS & INSTANTIATIONS
 // ==========================================
-#define BATTERY_ADC_PIN 4 
+#define BATTERY_ADC_PIN 6 
 
 #if (CONFIG_PANEL_TYPE == PANEL_TYPE_ENCODER)
 EncoderHandler encoder(0, 1, 2); // Pin A = D0 (GPIO 0), Pin B = D1 (GPIO 1), Pin SW = D2 (GPIO 2)
