@@ -7,7 +7,8 @@ EncoderHandler::EncoderHandler(uint8_t pinA, uint8_t pinB, uint8_t pinSW)
       _steps(0),
       _lastPinAState(HIGH),
       _swState(SWState::Idle),
-      _swPressTime(0) {}
+      _swPressTime(0),
+      _lastPressedTime(0) {}
 
 void EncoderHandler::begin() {
     pinMode(_pinA, INPUT_PULLUP);
@@ -47,6 +48,10 @@ bool EncoderHandler::checkEvent(ActionType& actionType, int8_t& rotationSteps) {
     bool pinSWPressed = (digitalRead(_pinSW) == LOW);
     uint32_t now = millis();
 
+    if (pinSWPressed) {
+        _lastPressedTime = now;
+    }
+
     switch (_swState) {
         case SWState::Idle:
             if (pinSWPressed) {
@@ -66,7 +71,7 @@ bool EncoderHandler::checkEvent(ActionType& actionType, int8_t& rotationSteps) {
             break;
 
         case SWState::Pressed:
-            if (!pinSWPressed) {
+            if (now - _lastPressedTime >= SW_DEBOUNCE_MS) {
                 _swState = SWState::Idle;
                 actionType = ActionType::Click;
                 rotationSteps = 0;

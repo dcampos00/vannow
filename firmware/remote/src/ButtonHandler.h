@@ -28,6 +28,7 @@ private:
     State _state;
     uint32_t _pressStartTime;
     uint32_t _lastHoldTime;
+    uint32_t _lastPressedTime;
 
     static constexpr uint32_t DEBOUNCE_MS = 15;
     static constexpr uint32_t HOLD_THRESHOLD_MS = 400; // Time in ms before click turns into a hold

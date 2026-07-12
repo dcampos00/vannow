@@ -36,7 +36,8 @@ void test_button_handler_click(void) {
     
     // Release button (HIGH)
     ArduinoMock::setPinState(10, HIGH);
-    TEST_ASSERT_TRUE(btn.checkEvent(action)); // Call at t=25: Pressed -> Idle, returns Click
+    ArduinoMock::advanceMillis(15); // Release debounce
+    TEST_ASSERT_TRUE(btn.checkEvent(action)); // Call at t=40: Pressed -> Idle, returns Click
     TEST_ASSERT_EQUAL(ActionType::Click, action);
 }
 
@@ -64,7 +65,8 @@ void test_button_handler_hold_and_release(void) {
     
     // Release button
     ArduinoMock::setPinState(10, HIGH);
-    TEST_ASSERT_TRUE(btn.checkEvent(action)); // Call at t=625: Holding -> Idle, returns Release
+    ArduinoMock::advanceMillis(15); // Release debounce
+    TEST_ASSERT_TRUE(btn.checkEvent(action)); // Call at t=640: Holding -> Idle, returns Release
     TEST_ASSERT_EQUAL(ActionType::Release, action);
 }
 
@@ -160,6 +162,7 @@ void test_encoder_handler_button_click(void) {
     
     // Release SW (HIGH)
     ArduinoMock::setPinState(7, HIGH);
+    ArduinoMock::advanceMillis(15); // Release debounce
     TEST_ASSERT_TRUE(encoder.checkEvent(action, steps));
     TEST_ASSERT_EQUAL(ActionType::Click, action);
     TEST_ASSERT_EQUAL(0, steps);

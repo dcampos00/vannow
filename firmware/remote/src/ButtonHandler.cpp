@@ -5,7 +5,8 @@ ButtonHandler::ButtonHandler(uint8_t pin, uint8_t buttonIndex)
       _buttonIndex(buttonIndex),
       _state(State::Idle),
       _pressStartTime(0),
-      _lastHoldTime(0) {}
+      _lastHoldTime(0),
+      _lastPressedTime(0) {}
 
 void ButtonHandler::begin() {
     pinMode(_pin, INPUT_PULLUP);
@@ -14,6 +15,10 @@ void ButtonHandler::begin() {
 bool ButtonHandler::checkEvent(ActionType& actionType) {
     bool pinPressed = (digitalRead(_pin) == LOW);
     uint32_t now = millis();
+
+    if (pinPressed) {
+        _lastPressedTime = now;
+    }
 
     switch (_state) {
         case State::Idle:
@@ -34,7 +39,7 @@ bool ButtonHandler::checkEvent(ActionType& actionType) {
             break;
 
         case State::Pressed:
-            if (!pinPressed) {
+            if (now - _lastPressedTime >= DEBOUNCE_MS) {
                 // Released early -> Click event
                 actionType = ActionType::Click;
                 _state = State::Idle;
@@ -49,7 +54,7 @@ bool ButtonHandler::checkEvent(ActionType& actionType) {
             break;
 
         case State::Holding:
-            if (!pinPressed) {
+            if (now - _lastPressedTime >= DEBOUNCE_MS) {
                 // Button released after a hold -> Release event
                 _state = State::Idle;
                 actionType = ActionType::Release;

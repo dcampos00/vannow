@@ -32,6 +32,7 @@ private:
     };
     SWState _swState;
     uint32_t _swPressTime;
+    uint32_t _lastPressedTime;
 
     static constexpr uint32_t SW_DEBOUNCE_MS = 15;
 };
