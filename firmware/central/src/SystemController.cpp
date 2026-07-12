@@ -56,7 +56,7 @@ void SystemController::dispatchMessage(const uint8_t* senderMac, const SwitchMes
     Serial.printf("Remote ID: %d | Button: %d | Action: %d\n", msg.remote_id, msg.button_index, msg.action);
     Serial.printf("Remote Battery: %.2f V\n", msg.battery_voltage);
 
-    if (msg.battery_voltage < 2.2f && msg.battery_voltage > 0.5f) {
+    if (msg.battery_voltage < 2.2f && (msg.battery_voltage > 0.5f || msg.battery_voltage == 0.0f)) {
         Serial.printf("[ALERT] Critical battery on Panel %d. Replace AA batteries.\n", msg.remote_id);
     }
 

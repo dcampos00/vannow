@@ -44,7 +44,8 @@ float RemoteSender::readBatteryVoltage() {
     // Seeed Studio XIAO ESP32-C6 defaults to 12-bit ADC (0-4095) with ~3.3V reference
     float adcVoltage = (raw / 4095.0f) * 3.3f;
     float batteryVoltage = adcVoltage * 2.0f; // 1:1 divisor (100k + 100k)
-    return (batteryVoltage < 0.5f) ? 3.0f : batteryVoltage;
+    if (raw <= 0 || batteryVoltage < 0.3f) return 0.0f;
+    return batteryVoltage;
 }
 
 bool RemoteSender::send(ActionType action, uint8_t buttonIndex, int8_t rotationSteps) {
