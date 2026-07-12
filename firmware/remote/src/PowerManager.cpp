@@ -1,5 +1,10 @@
 #include "PowerManager.h"
 
+#ifdef ARDUINO_ARCH_ESP32
+#include <esp_now.h>
+#include <esp_wifi.h>
+#endif
+
 PowerManager::PowerManager(uint32_t inactivityTimeoutMs)
     : _inactivityTimeoutMs(inactivityTimeoutMs), _lastActivityTime(0) {}
 
@@ -30,6 +35,12 @@ void PowerManager::goToSleep(const uint8_t* wakeupPins, uint8_t pinCount) {
     Serial.println("Entering Deep Sleep mode now.");
     Serial.flush();
     delay(10);
+
+#ifdef ARDUINO_ARCH_ESP32
+    esp_now_deinit();
+    esp_wifi_stop();
+    esp_wifi_deinit();
+#endif
 
     esp_deep_sleep_start();
 }
