@@ -516,7 +516,7 @@ module VanCentralControllerPROFET:
     # Ceiling Fan (GPIO 19 - Discrete MOSFET)
     # ----------------------------------------
     fan_stage = new PChannelHighSideSwitch
-    esp32.GPIO19 ~ fan_stage.control
+    esp32.GPIO17 ~ fan_stage.control
     v_bat_12v ~ fan_stage.power_in
     gnd ~ fan_stage.gnd
 
@@ -542,7 +542,7 @@ module VanCentralControllerPROFET:
 
     # DC-DC Charger (GPIO 20)
     dcdc_opto = new OptocouplerIsolation
-    esp32.GPIO20 ~ dcdc_opto.control
+    esp32.GPIO18 ~ dcdc_opto.control
     gnd ~ dcdc_opto.gnd
 
     dcdc_terminal = new ScrewTerminal_2Pin
@@ -632,7 +632,7 @@ module VanCentralControllerModular:
     mosfet_card2_ctrl = new Header_1x5
     gnd ~ mosfet_card2_ctrl.pin_1
     esp32.GPIO4 ~ mosfet_card2_ctrl.pin_2  # Pump Control
-    esp32.GPIO19 ~ mosfet_card2_ctrl.pin_3 # Fan Control
+    esp32.GPIO17 ~ mosfet_card2_ctrl.pin_3 # Fan Control
     esp32.GPIO5 ~ mosfet_card2_ctrl.pin_4  # Aux 1 Control
     esp32.GPIO6 ~ mosfet_card2_ctrl.pin_5  # Aux 2 Control
 
@@ -649,7 +649,7 @@ module VanCentralControllerModular:
     opto_card_ctrl = new Header_1x4
     gnd ~ opto_card_ctrl.pin_1
     esp32.GPIO21 ~ opto_card_ctrl.pin_2    # Inverter Control
-    esp32.GPIO20 ~ opto_card_ctrl.pin_3    # DC-DC Charger Control
+    esp32.GPIO18 ~ opto_card_ctrl.pin_3    # DC-DC Charger Control
     # pin_4 left NC
 
     # ----------------------------------------

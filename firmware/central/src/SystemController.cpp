@@ -1,23 +1,23 @@
 #include "SystemController.h"
 
 SystemController::SystemController() {
-    // Define the 11 physical channels using ESP32-S3 DevKit pins as per specifications
+    // Define the 11 physical channels using ESP32-S3 DevKit pins as per schematic
     // Channels 0 to 3: Dimmable LED Zones
     _channels[0] = new DimmableChannel("Lights Zone 1", 12); // Pin 12
     _channels[1] = new DimmableChannel("Lights Zone 2", 13); // Pin 13
     _channels[2] = new DimmableChannel("Lights Zone 3", 14); // Pin 14
-    _channels[3] = new DimmableChannel("Lights Zone 4", 27); // Pin 27
+    _channels[3] = new DimmableChannel("Lights Zone 4", 15); // Pin 15
 
     // Channels 4 to 8: Digital Outputs (Bomba de Agua, Aux 1-3, Ventilador)
-    _channels[4] = new DigitalChannel("Water Pump", 25);         // Pin 25
-    _channels[5] = new DigitalChannel("Aux Outlet 1", 26);       // Pin 26
-    _channels[6] = new DigitalChannel("Aux Outlet 2", 32);       // Pin 32
-    _channels[7] = new DigitalChannel("Aux Outlet 3", 33);       // Pin 33
-    _channels[8] = new DigitalChannel("Ceiling Fan", 19);        // Pin 19
+    _channels[4] = new DigitalChannel("Water Pump", 4);          // Pin 4
+    _channels[5] = new DigitalChannel("Aux Outlet 1", 5);        // Pin 5
+    _channels[6] = new DigitalChannel("Aux Outlet 2", 6);        // Pin 6
+    _channels[7] = new DigitalChannel("Aux Outlet 3", 7);        // Pin 7
+    _channels[8] = new DigitalChannel("Ceiling Fan", 17);        // Pin 17
 
     // Channels 9 and 10: Optocouplers for Inverter and DC-DC charger
     _channels[9] = new DigitalChannel("Inverter (Multiplus II)", 21); // Pin 21
-    _channels[10] = new DigitalChannel("DC-DC Charger", 22);          // Pin 22
+    _channels[10] = new DigitalChannel("DC-DC Charger", 18);          // Pin 18
 }
 
 SystemController::~SystemController() {

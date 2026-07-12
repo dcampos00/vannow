@@ -214,7 +214,7 @@ void test_system_controller_basics(void) {
     controller.begin();
     
     TEST_ASSERT_EQUAL(INPUT, ArduinoMock::getPinMode(1));
-    TEST_ASSERT_EQUAL(OUTPUT, ArduinoMock::getPinMode(25));
+    TEST_ASSERT_EQUAL(OUTPUT, ArduinoMock::getPinMode(4));
     
     uint8_t entryMac[6] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
     SwitchMessage msg = {};
@@ -236,7 +236,7 @@ void test_system_controller_basics(void) {
     // Water pump
     msg.button_index = 2;
     controller.dispatchMessage(entryMac, msg);
-    TEST_ASSERT_EQUAL(HIGH, ArduinoMock::getPinState(25));
+    TEST_ASSERT_EQUAL(HIGH, ArduinoMock::getPinState(4));
     
     // Low battery trigger alert
     msg.button_index = 0;

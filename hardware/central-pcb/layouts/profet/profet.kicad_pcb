@@ -113,12 +113,10 @@
 	(net 10 "aux3_stage-input")
 	(net 11 "aux3_stage-current_sense")
 	(net 12 "anode")
-	(net 13 "control-3")
+	(net 13 "GPIO20")
 	(net 14 "dcdc_opto-anode")
 	(net 15 "out_emitter")
 	(net 16 "out_collector")
-	(net 17 "GPIO17")
-	(net 18 "GPIO18")
 	(net 19 "12")
 	(net 20 "13")
 	(net 21 "14")
@@ -144,7 +142,7 @@
 	(net 41 "esp32.right_header-17")
 	(net 42 "18")
 	(net 43 "control-9")
-	(net 44 "control-8")
+	(net 44 "GPIO19")
 	(net 45 "esp32.right_header-3")
 	(net 46 "4")
 	(net 47 "1")
@@ -185,6 +183,8 @@
 	(net 82 "pump_terminal-3")
 	(net 83 "anode-2")
 	(net 84 "v_out")
+	(net 85 "control-3")
+	(net 86 "control-8")
 	(footprint "central-pcb:TerminalBlock_Phoenix_MPT-0,5-2-2.54_1x02_P2.54mm_Horizontal"
 		(layer "F.Cu")
 		(uuid "41ad7e02-0043-4d57-9b66-afd24642524b")
@@ -1274,7 +1274,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 17 "GPIO17")
+			(net 86 "control-8")
 		)
 		(pad "11" thru_hole circle
 			(at 0 25.4 90)
@@ -1282,7 +1282,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 18 "GPIO18")
+			(net 85 "control-3")
 		)
 		(pad "12" thru_hole circle
 			(at 0 27.94 90)
@@ -1643,7 +1643,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 48 "7")
+			(net 0 "")
 		)
 		(pad "8" thru_hole circle
 			(at 0 17.78 90)
@@ -1747,7 +1747,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 13 "control-3")
+			(net 13 "GPIO20")
 		)
 		(pad "21" thru_hole circle
 			(at 0 50.8 90)
@@ -1755,7 +1755,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 44 "control-8")
+			(net 44 "GPIO19")
 		)
 		(pad "22" thru_hole circle
 			(at 0 53.34 90)
@@ -11865,7 +11865,7 @@
 			(at -0.9125 0)
 			(size 1.025 1.4)
 			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 44 "control-8")
+			(net 86 "control-8")
 			(roundrect_rratio 0.243902)
 		)
 		(pad "2" smd roundrect
@@ -12005,7 +12005,7 @@
 			(at -0.9125 0)
 			(size 1.025 1.4)
 			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 44 "control-8")
+			(net 86 "control-8")
 			(roundrect_rratio 0.243902)
 		)
 		(pad "2" smd roundrect
@@ -13796,7 +13796,7 @@
 			(at -0.9125 0)
 			(size 1.025 1.4)
 			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 13 "control-3")
+			(net 85 "control-3")
 			(roundrect_rratio 0.243902)
 		)
 		(pad "2" smd roundrect
