@@ -487,7 +487,7 @@ module VanCentralControllerPROFET:
 
     # Flyback diode for pump protection
     pump_diode = new MyDiode
-    pump_stage.power_out ~ pump_diode.cathode # Cathode
+    pump_terminal.pin_3 ~ pump_diode.cathode # Cathode
     gnd ~ pump_diode.anode # Anode
 
     # 4-pin SPDT Override Terminal Block
