@@ -1,0 +1,58 @@
+# ==============================================================================
+# Example: Precision ADC Voltage Divider with BAT54S Rail Clamping in Atopile
+# Avoids non-linear Zener leakage and provides anti-aliasing filtering.
+# ==============================================================================
+
+import Resistor from "generics/resistors.ato"
+import Capacitor from "generics/capacitors.ato"
+import Diode from "generics/diodes.ato"
+
+interface Power:
+    signal vcc
+    signal gnd
+
+module PrecisionBatteryDivider:
+    # Interfaces
+    power_3v3 = new Power
+
+    signal v_in_12v
+    signal gnd
+    signal v_out_adc
+
+    # Components
+    r_high = new Resistor
+    r_low = new Resistor
+    r_series = new Resistor
+    c_filter = new Capacitor
+    d_clamp = new Diode   # Low-leakage Schottky (BAT54S)
+
+    # Component parameter definitions
+    r_high.resistance = 100kohm +/- 1%
+    r_high.package = "0805"
+
+    r_low.resistance = 18kohm +/- 1%
+    r_low.package = "0805"
+
+    r_series.resistance = 1kohm +/- 1%
+    r_series.package = "0805"
+
+    c_filter.capacitance = 100nF +/- 10%
+    c_filter.package = "0805"
+
+    # Circuit Netlist
+    # Divider Node
+    signal div_mid
+    v_in_12v ~ r_high.1
+    r_high.2 ~ div_mid
+    div_mid ~ r_low.1
+    r_low.2 ~ gnd
+
+    # Series Isolation Resistor & Filter Capacitor
+    div_mid ~ r_series.1
+    r_series.2 ~ v_out_adc
+    v_out_adc ~ c_filter.1
+    c_filter.2 ~ gnd
+
+    # Schottky Overvoltage Clamp to 3.3V Rail
+    v_out_adc ~ d_clamp.anode
+    d_clamp.cathode ~ power_3v3.vcc

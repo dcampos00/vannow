@@ -1,0 +1,45 @@
+# ==============================================================================
+# Example: Carrier Board Header Pattern in Atopile
+# Demonstrates physical pin separation, semantic abstraction, and compile-time assertions.
+# ==============================================================================
+
+component PinSocket_1x22:
+    trait is_atomic_part<manufacturer="Generic", partnumber="PinSocket_1x22_2.54mm">
+    signal pin_1 ~ pin 1; signal pin_2 ~ pin 2; signal pin_3 ~ pin 3; signal pin_4 ~ pin 4
+    signal pin_5 ~ pin 5; signal pin_6 ~ pin 6; signal pin_7 ~ pin 7; signal pin_8 ~ pin 8
+    signal pin_9 ~ pin 9; signal pin_10 ~ pin 10; signal pin_11 ~ pin 11; signal pin_12 ~ pin 12
+    signal pin_13 ~ pin 13; signal pin_14 ~ pin 14; signal pin_15 ~ pin 15; signal pin_16 ~ pin 16
+    signal pin_17 ~ pin 17; signal pin_18 ~ pin 18; signal pin_19 ~ pin 19; signal pin_20 ~ pin 20
+    signal pin_21 ~ pin 21; signal pin_22 ~ pin 22
+
+interface Power:
+    signal vcc
+    signal gnd
+
+module ESP32_S3_Carrier_Module:
+    j1 = new PinSocket_1x22
+    j3 = new PinSocket_1x22
+
+    power_5v = new Power
+    power_3v3 = new Power
+
+    # J1: Pin 1 = 3V3, Pin 21 = 5V (VIN), Pin 22 = GND
+    power_3v3.vcc ~ j1.pin_1
+    power_5v.vcc  ~ j1.pin_21
+    power_5v.gnd  ~ j1.pin_22
+    power_3v3.gnd ~ j1.pin_22
+
+    # J3: Pin 1 = GND, Pin 21 = GND, Pin 22 = GND
+    j3.pin_1  ~ power_5v.gnd
+    j3.pin_21 ~ power_5v.gnd
+    j3.pin_22 ~ power_5v.gnd
+
+    # IO Signals
+    signal adc_battery ~ j3.pin_4   # GPIO 1 (ADC1_CH0)
+    signal adc_current ~ j3.pin_5   # GPIO 2 (ADC1_CH1)
+    signal out_relay   ~ j3.pin_18  # GPIO 21
+
+    # Compile-time sanity assertions
+    assert power_5v.vcc != power_5v.gnd
+    assert power_3v3.vcc != power_3v3.gnd
+    assert j1.pin_21 != j3.pin_1
