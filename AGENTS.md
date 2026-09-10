@@ -82,6 +82,7 @@ Before implementing firmware modifications or hardware schematic revisions, agen
 
 ### 3. Engineering Skills & Design Standards
 - **Schematic & PCB Design:** [`.agents/skills/schematic-design/SKILL.md`](.agents/skills/schematic-design/SKILL.md) (Automotive 12V power entry, PROFET switching, ADC clamping, Atopile Hardware-as-Code assertions).
+- **PCB 3D Rendering & CAD Export:** [`.agents/skills/pcb-rendering/SKILL.md`](.agents/skills/pcb-rendering/SKILL.md) (Headless KiCad raytracing, isometric perspective with floor shadows, populated 3D STEP solid export, and ECAD/MCAD clash detection in build123d).
 - **Parametric 3D CAD & Mesh Verification:** [`.agents/skills/parametric-cad-enclosures/SKILL.md`](.agents/skills/parametric-cad-enclosures/SKILL.md) (build123d Code-as-CAD, heat-set fastener sizing, stepped joints, ergonomic extraction, and headless software Z-buffer rendering).
 
 > [!NOTE]
