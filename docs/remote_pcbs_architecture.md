@@ -204,3 +204,15 @@ The entrance remote incorporates both the 6 tactile push buttons (diode-ORed to 
 - **D8 (GPIO 19):** Sense Button 6 (Master Night Shutdown).
 - **D9 (GPIO 20):** Sense Encoder Push Button.
 - **D10 (GPIO 9):** Status Micro-LED (Green/Red feedback for ESP-NOW ACK).
+
+### 4.3 Timed Water Pump Shower Mode & User Notification
+To conserve fresh water and prevent grey water overflows, the water pump incorporates a dedicated **Shower Mode** (default 5 minutes = 300 seconds with NVS persistence):
+* **Triggering:**
+  - **Double-Click** or **Long-Press (>400 ms / 1.5s)** on the Water Pump button engages Shower Mode.
+  - Single Click operates as standard ON/OFF toggle (backed by the 10-minute flood failsafe).
+  - Pressing the button at any time during the 5 minutes immediately cancels and turns the pump OFF.
+* **Dual Feedback & Notification System:**
+  1. **Visual Remote Feedback:** The status Micro-LED on the remote panel (GPIO 9) flashes **3 rapid pulses (80 ms ON / 80 ms OFF)** upon initiating Shower Mode.
+  2. **Hydraulic / Acoustic Pump Chirp:** The central controller pulses the pump twice (**150 ms ON, 120 ms OFF, 150 ms ON, 120 ms OFF**) before entering steady flow. The mechanical pressure bump creates an audible confirmation through the camper plumbing lines, informing anyone inside the shower stall that the timer is active.
+* **NVS Persistence:** The timer duration is persisted in NVS namespace `vannow_state`, key `pump_shower_ms` (configurable programmatically or via serial/web).
+

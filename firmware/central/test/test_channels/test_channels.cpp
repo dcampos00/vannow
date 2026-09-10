@@ -418,6 +418,123 @@ void test_nvs_state_persistence_and_restore(void) {
     }
 }
 
+void test_water_pump_shower_timer_with_chirp(void) {
+    DigitalChannel pump("Water Pump", 4);
+    pump.begin();
+
+    TEST_ASSERT_FALSE(pump.getState());
+    TEST_ASSERT_EQUAL(LOW, ArduinoMock::getPinState(4));
+
+    // Activate 5-minute shower mode with chirp (300,000 ms) at t = 0
+    pump.activateTimer(300000, true);
+    TEST_ASSERT_TRUE(pump.getState());
+    TEST_ASSERT_TRUE(pump.isTimedActive());
+    // Pulse 1 ON immediately
+    TEST_ASSERT_EQUAL(HIGH, ArduinoMock::getPinState(4));
+
+    // Advance 155 ms -> Pulse 1 completes, transitions to Pulse 1 OFF
+    ArduinoMock::advanceMillis(155);
+    pump.update();
+    TEST_ASSERT_EQUAL(LOW, ArduinoMock::getPinState(4));
+
+    // Advance 125 ms -> Pulse 1 pause completes, transitions to Pulse 2 ON
+    ArduinoMock::advanceMillis(125);
+    pump.update();
+    TEST_ASSERT_EQUAL(HIGH, ArduinoMock::getPinState(4));
+
+    // Advance 155 ms -> Pulse 2 completes, transitions to Pulse 2 OFF
+    ArduinoMock::advanceMillis(155);
+    pump.update();
+    TEST_ASSERT_EQUAL(LOW, ArduinoMock::getPinState(4));
+
+    // Advance 125 ms -> Chirp finished, enters steady Running mode (Pin HIGH)
+    ArduinoMock::advanceMillis(125);
+    pump.update();
+    TEST_ASSERT_EQUAL(HIGH, ArduinoMock::getPinState(4));
+    TEST_ASSERT_TRUE(pump.isTimedActive());
+
+    // Total elapsed: 560 ms. Remaining time should be ~ 299,440 ms
+    TEST_ASSERT_UINT32_WITHIN(100, 299440, pump.getRemainingTime());
+
+    // Advance 200 seconds (200,000 ms) -> still running
+    ArduinoMock::advanceMillis(200000);
+    pump.update();
+    TEST_ASSERT_TRUE(pump.getState());
+    TEST_ASSERT_EQUAL(HIGH, ArduinoMock::getPinState(4));
+
+    // Advance to 300,001 ms -> shower timer expires!
+    ArduinoMock::advanceMillis(100000);
+    pump.update();
+    TEST_ASSERT_FALSE(pump.getState());
+    TEST_ASSERT_FALSE(pump.isTimedActive());
+    TEST_ASSERT_EQUAL(LOW, ArduinoMock::getPinState(4));
+    TEST_ASSERT_EQUAL(0, pump.getRemainingTime());
+}
+
+void test_water_pump_shower_mode_dispatch_and_cancel(void) {
+    SystemController controller;
+    controller.begin();
+    uint8_t mac[6] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0x11};
+
+    DigitalChannel* pump = static_cast<DigitalChannel*>(controller.getChannel(4));
+    TEST_ASSERT_NOT_NULL(pump);
+    TEST_ASSERT_FALSE(pump->getState());
+
+    // 1. Entry panel (remote_id 1, button 2) sends DoubleClick -> starts Shower Mode
+    SwitchMessage msg = {};
+    msg.remote_id = 1;
+    msg.button_index = 2; // Water Pump
+    msg.action = (uint8_t)ActionType::DoubleClick;
+    msg.seq = 100;
+    controller.dispatchMessage(mac, msg);
+
+    TEST_ASSERT_TRUE(pump->getState());
+    TEST_ASSERT_TRUE(pump->isTimedActive());
+
+    // Let chirp finish (advance 1000ms in small steps simulating loop updates)
+    for (int i = 0; i < 10; i++) {
+        ArduinoMock::advanceMillis(100);
+        controller.update();
+    }
+    TEST_ASSERT_EQUAL(HIGH, ArduinoMock::getPinState(4));
+
+    // 2. User finishes shower early after 2 minutes and presses pump button (Click)
+    ArduinoMock::advanceMillis(120000);
+    controller.update();
+    TEST_ASSERT_TRUE(pump->getState());
+
+    SwitchMessage cancelMsg = {};
+    cancelMsg.remote_id = 1;
+    cancelMsg.button_index = 2;
+    cancelMsg.action = (uint8_t)ActionType::Click;
+    cancelMsg.seq = 101;
+    controller.dispatchMessage(mac, cancelMsg);
+
+    // Pump must turn OFF immediately and cancel timer
+    TEST_ASSERT_FALSE(pump->getState());
+    TEST_ASSERT_FALSE(pump->isTimedActive());
+    TEST_ASSERT_EQUAL(LOW, ArduinoMock::getPinState(4));
+}
+
+void test_shower_mode_nvs_configuration(void) {
+    // Session 1: Custom shower timer configuration (e.g. 3 minutes = 180,000 ms)
+    {
+        SystemController controller;
+        controller.begin();
+        TEST_ASSERT_EQUAL_UINT32(300000, controller.getPumpShowerTimeout());
+
+        controller.setPumpShowerTimeout(180000); // 3 minutes
+        TEST_ASSERT_EQUAL_UINT32(180000, controller.getPumpShowerTimeout());
+    }
+
+    // Session 2: "Reboot" -> verify custom timeout was restored from NVS
+    {
+        SystemController freshController;
+        freshController.begin();
+        TEST_ASSERT_EQUAL_UINT32(180000, freshController.getPumpShowerTimeout());
+    }
+}
+
 int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(test_digital_channel_toggle);
@@ -432,6 +549,9 @@ int main(int argc, char **argv) {
     RUN_TEST(test_anti_replay_sliding_window);
     RUN_TEST(test_water_pump_auto_off_timer);
     RUN_TEST(test_nvs_state_persistence_and_restore);
+    RUN_TEST(test_water_pump_shower_timer_with_chirp);
+    RUN_TEST(test_water_pump_shower_mode_dispatch_and_cancel);
+    RUN_TEST(test_shower_mode_nvs_configuration);
     return UNITY_END();
 }
 

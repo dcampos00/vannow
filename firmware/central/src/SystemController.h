@@ -38,11 +38,16 @@ public:
     void loadPersistedStates();
     void saveChannelState(uint8_t channelIndex);
 
+    // Water pump timed shower configuration (in milliseconds)
+    void setPumpShowerTimeout(uint32_t ms);
+    uint32_t getPumpShowerTimeout() const;
+
 private:
     static void onChannelChanged(uint8_t channelIndex, void* context);
 
     Channel* _channels[NUM_CHANNELS];
     AntiReplayFilter _antiReplay;
+    uint32_t _pumpShowerTimeoutMs;
 
     // Configuration parameters for main battery reading
     static constexpr uint8_t BATTERY_ADC_PIN = 1;

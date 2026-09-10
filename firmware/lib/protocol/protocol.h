@@ -7,8 +7,9 @@
 enum class ActionType : uint8_t {
     Click = 0,      // Brief button press (Toggle ON/OFF)
     StartHold = 1,  // Button pressed and held down
-    Release = 2,    // Button released after a hold
-    EncoderTurn = 3 // Rotary encoder rotation step
+    Release = 2,        // Button released after a hold
+    EncoderTurn = 3,    // Rotary encoder rotation step
+    DoubleClick = 4     // Double-tap event (Shower Mode / Preset toggle)
 };
 
 // Unified message structure for ESP-NOW communications

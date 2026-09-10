@@ -33,6 +33,26 @@ uint8_t centralMacAddress[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
 // PIN DEFINITIONS & INSTANTIATIONS
 // ==========================================
 #define BATTERY_ADC_PIN 6 
+#define STATUS_LED_PIN  9 // D10 Status Micro-LED on XIAO ESP32-C6
+
+// Visual feedback: 3 rapid pulses for Shower Mode, 1 pulse for standard actions
+void indicateAction(ActionType action, uint8_t buttonIdx) {
+    pinMode(STATUS_LED_PIN, OUTPUT);
+    if ((buttonIdx == 2 || buttonIdx == 3) && (action == ActionType::DoubleClick || action == ActionType::StartHold)) {
+        // Shower Mode: 3 rapid 80ms pulses
+        for (int p = 0; p < 3; p++) {
+            digitalWrite(STATUS_LED_PIN, HIGH);
+            delay(80);
+            digitalWrite(STATUS_LED_PIN, LOW);
+            delay(80);
+        }
+    } else {
+        // Standard action confirmation: single 50ms pulse
+        digitalWrite(STATUS_LED_PIN, HIGH);
+        delay(50);
+        digitalWrite(STATUS_LED_PIN, LOW);
+    }
+}
 
 #if (CONFIG_PANEL_TYPE == PANEL_TYPE_ENCODER)
 EncoderHandler encoder(0, 1, 2); // Pin A = D0 (GPIO 0), Pin B = D1 (GPIO 1), Pin SW = D2 (GPIO 2)
@@ -97,6 +117,7 @@ void loop() {
     if (encoder.checkEvent(action, steps)) {
         powerManager.feed();
         remoteSender.send(action, 0, steps); // Encoder SW button acts as button 0
+        indicateAction(action, 0);
     }
 #elif (CONFIG_PANEL_TYPE == PANEL_TYPE_MATRIX)
     uint8_t buttonIdx = 0;
@@ -104,6 +125,7 @@ void loop() {
     if (matrix.checkEvent(buttonIdx, action)) {
         powerManager.feed();
         remoteSender.send(action, buttonIdx, 0);
+        indicateAction(action, buttonIdx);
     }
 #else
     for (int i = 0; i < 3; i++) {
@@ -111,6 +133,7 @@ void loop() {
         if (buttons[i]->checkEvent(action)) {
             powerManager.feed();
             remoteSender.send(action, i, 0);
+            indicateAction(action, i);
         }
     }
 #endif

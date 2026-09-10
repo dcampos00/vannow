@@ -18,6 +18,8 @@ SystemController::SystemController() {
     // Channels 9 and 10: Optocouplers for Inverter and DC-DC charger
     _channels[9] = new DigitalChannel("Inverter (Multiplus II)", 21); // Pin 21
     _channels[10] = new DigitalChannel("DC-DC Charger", 18);          // Pin 18
+
+    _pumpShowerTimeoutMs = 300000; // Default 5 minutes (300,000 ms)
 }
 
 SystemController::~SystemController() {
@@ -132,7 +134,22 @@ void SystemController::loadPersistedStates() {
         }
     }
 
+    _pumpShowerTimeoutMs = prefs.getUInt("pump_shower_ms", 300000);
+
     prefs.end();
+}
+
+void SystemController::setPumpShowerTimeout(uint32_t ms) {
+    _pumpShowerTimeoutMs = ms;
+    Preferences prefs;
+    if (prefs.begin("vannow_state", false)) {
+        prefs.putUInt("pump_shower_ms", ms);
+        prefs.end();
+    }
+}
+
+uint32_t SystemController::getPumpShowerTimeout() const {
+    return _pumpShowerTimeoutMs;
 }
 
 AntiReplayFilter& SystemController::getAntiReplayFilter() {
@@ -194,6 +211,27 @@ void SystemController::dispatchMessage(const uint8_t* senderMac, const SwitchMes
         if (msg.button_index == 4) targetChannelIdx = 0; // Lights Zone 1
         if (msg.button_index == 5) targetChannelIdx = 1; // Lights Zone 2
         if (msg.button_index == 6) targetChannelIdx = 4; // Water Pump
+    }
+    else if (msg.remote_id == 3) { // Cockpit Panel (Dashboard Carling Switch Hub)
+        if (msg.button_index == 0) targetChannelIdx = 5;  // SW1: Exterior Auxiliary Lights (Aux 1)
+        if (msg.button_index == 1) targetChannelIdx = 10; // SW2: Orion-XS DC-DC Remote Enable
+        if (msg.button_index == 2) targetChannelIdx = 0;  // SW3: Cabin Interior Lights (Zone 1)
+        if (msg.button_index == 3) targetChannelIdx = 4;  // SW4: Water Pump
+        if (msg.button_index == 4) targetChannelIdx = 9;  // SW5: Inverter (Multiplus II)
+        if (msg.button_index == 5) targetChannelIdx = 8;  // SW6: Ceiling Fan / Driving Mode
+    }
+
+    // Special handling for Water Pump Shower Mode (Channel 4)
+    if (targetChannelIdx == 4 && (msg.action == (uint8_t)ActionType::DoubleClick || msg.action == (uint8_t)ActionType::StartHold)) {
+        DigitalChannel* pump = static_cast<DigitalChannel*>(_channels[4]);
+        if (pump->isTimedActive()) {
+            Serial.println("[Shower Mode] Pump cancelled early by user.");
+            pump->setState(false);
+        } else {
+            Serial.printf("[Shower Mode] Activated: %u ms with acoustic chirp\n", _pumpShowerTimeoutMs);
+            pump->activateTimer(_pumpShowerTimeoutMs, true);
+        }
+        return;
     }
 
     // Forward action to target channel
