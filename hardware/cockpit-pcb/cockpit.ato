@@ -36,9 +36,9 @@ component MyLED:
     signal cathode ~ pin 2
 
 component MyDiode:
-    trait is_atomic_part<manufacturer="Generic", partnumber="DO201_Diode", footprint="D_DO-201AD_P15.24mm_Horizontal.kicad_mod", symbol="Device:D">
+    trait is_atomic_part<manufacturer="Generic", partnumber="1N4148W", footprint="D_SOD-123.kicad_mod", symbol="Device:D">
     trait has_designator_prefix<prefix="D">
-    trait has_part_picked<manufacturer="Generic", partno="DO201_Diode", supplier_partno="C12347", supplier_id="lcsc">
+    trait has_part_picked<manufacturer="Generic", partno="1N4148W", supplier_partno="C81598", supplier_id="lcsc">
     signal cathode ~ pin 1
     signal anode ~ pin 2
 
@@ -112,8 +112,8 @@ module SwitchInputChannel:
     gnd ~ c_debounce.p2
 
     switch_in ~ mcu_sense
-    switch_in ~ d_wake.anode
-    wakeup_bus ~ d_wake.cathode
+    wakeup_bus ~ d_wake.anode
+    switch_in ~ d_wake.cathode
 
 # ==============================================================================
 # TOP-LEVEL MODULE: CockpitControllerHub
