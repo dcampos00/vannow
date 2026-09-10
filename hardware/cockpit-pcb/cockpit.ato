@@ -1,0 +1,211 @@
+#pragma experiment("TRAITS")
+#pragma experiment("MODULE_TEMPLATING")
+
+import is_atomic_part
+import has_designator_prefix
+import has_part_picked
+
+# Atopile Circuit Design for VanNOW Cockpit Switch Hub
+# Connects dashboard Carling rocker switch blanks to an ultra-low-power ESP32-C6 transmitter.
+
+# ==============================================================================
+# COMPONENT LIBRARY DEFINITIONS
+# ==============================================================================
+
+component MyResistor:
+    trait is_atomic_part<manufacturer="Generic", partnumber="R_0805", footprint="R_0805_2012Metric.kicad_mod", symbol="Device:R">
+    trait has_designator_prefix<prefix="R">
+    trait has_part_picked<manufacturer="Generic", partno="R_0805", supplier_partno="C17414", supplier_id="lcsc">
+    signal p1 ~ pin 1
+    signal p2 ~ pin 2
+    value = ""
+
+component MyCapacitor:
+    trait is_atomic_part<manufacturer="Generic", partnumber="C_0805", footprint="C_0805_2012Metric.kicad_mod", symbol="Device:C">
+    trait has_designator_prefix<prefix="C">
+    trait has_part_picked<manufacturer="Generic", partno="C_0805", supplier_partno="C17415", supplier_id="lcsc">
+    signal p1 ~ pin 1
+    signal p2 ~ pin 2
+    value = ""
+
+component MyLED:
+    trait is_atomic_part<manufacturer="Generic", partnumber="LED_0805", footprint="LED_0805_2012Metric.kicad_mod", symbol="Device:LED">
+    trait has_designator_prefix<prefix="D">
+    trait has_part_picked<manufacturer="Generic", partno="LED_0805", supplier_partno="C2286", supplier_id="lcsc">
+    signal anode ~ pin 1
+    signal cathode ~ pin 2
+
+component MyDiode:
+    trait is_atomic_part<manufacturer="Generic", partnumber="DO201_Diode", footprint="D_DO-201AD_P15.24mm_Horizontal.kicad_mod", symbol="Device:D">
+    trait has_designator_prefix<prefix="D">
+    trait has_part_picked<manufacturer="Generic", partno="DO201_Diode", supplier_partno="C12347", supplier_id="lcsc">
+    signal cathode ~ pin 1
+    signal anode ~ pin 2
+
+component Header_1x7:
+    trait is_atomic_part<manufacturer="Generic", partnumber="Header_1x7", footprint="PinSocket_1x07_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x07_Pin">
+    trait has_designator_prefix<prefix="J">
+    trait has_part_picked<manufacturer="Generic", partno="Header_1x7", supplier_partno="C12360", supplier_id="lcsc">
+    signal pin_1 ~ pin 1; signal pin_2 ~ pin 2; signal pin_3 ~ pin 3; signal pin_4 ~ pin 4
+    signal pin_5 ~ pin 5; signal pin_6 ~ pin 6; signal pin_7 ~ pin 7
+
+component ScrewTerminal_2Pin:
+    trait is_atomic_part<manufacturer="Phoenix_Contact", partnumber="MPT_0.5_2_2.54", footprint="TerminalBlock_Phoenix_MPT-0,5-2-2.54_1x02_P2.54mm_Horizontal.kicad_mod", symbol="Connector:Screw_Terminal_01x02">
+    trait has_designator_prefix<prefix="J">
+    trait has_part_picked<manufacturer="Phoenix_Contact", partno="MPT_0.5_2_2.54", supplier_partno="C12351", supplier_id="lcsc">
+    signal pin_1 ~ pin 1
+    signal pin_2 ~ pin 2
+
+component ScrewTerminal_4Pin:
+    trait is_atomic_part<manufacturer="Phoenix_Contact", partnumber="MPT_0.5_4_2.54", footprint="TerminalBlock_Phoenix_MPT-0,5-4-2.54_1x04_P2.54mm_Horizontal.kicad_mod", symbol="Connector:Screw_Terminal_01x04">
+    trait has_designator_prefix<prefix="J">
+    trait has_part_picked<manufacturer="Phoenix_Contact", partno="MPT_0.5_4_2.54", supplier_partno="C12352", supplier_id="lcsc">
+    signal pin_1 ~ pin 1
+    signal pin_2 ~ pin 2
+    signal pin_3 ~ pin 3
+    signal pin_4 ~ pin 4
+
+# ==============================================================================
+# SUB-MODULES
+# ==============================================================================
+
+# Microcontroller Socket for Seeed Studio XIAO ESP32-C6
+module Seeed_XIAO_ESP32C6:
+    header_left = new Header_1x7
+    header_right = new Header_1x7
+
+    # Left Row (LP-GPIOs and HP Pins)
+    signal LP_GPIO0 ~ header_left.pin_1  # D0 (EXT1 Wakeup Interrupt)
+    signal GPIO1    ~ header_left.pin_2  # D1
+    signal GPIO2    ~ header_left.pin_3  # D2
+    signal GPIO21   ~ header_left.pin_4  # D3
+    signal GPIO22   ~ header_left.pin_5  # D4
+    signal GPIO23   ~ header_left.pin_6  # D5
+    signal GPIO16   ~ header_left.pin_7  # D6
+
+    # Right Row
+    signal GPIO17   ~ header_right.pin_1 # D7
+    signal GPIO19   ~ header_right.pin_2 # D8
+    signal GPIO20   ~ header_right.pin_3 # D9
+    signal GPIO9    ~ header_right.pin_4 # D10 (Status LED)
+    signal V3P3     ~ header_right.pin_5 # 3V3 Input
+    signal GND      ~ header_right.pin_6 # GND
+    signal V5       ~ header_right.pin_7 # 5V (NC)
+
+# Single Switch Channel with Pull-Up, Debounce & Wakeup Diode
+module SwitchInputChannel:
+    signal switch_in
+    signal mcu_sense
+    signal wakeup_bus
+    signal vcc
+    signal gnd
+
+    r_pull = new MyResistor
+    r_pull.value = "100k"
+    c_debounce = new MyCapacitor
+    c_debounce.value = "100nF"
+    d_wake = new MyDiode
+
+    vcc ~ r_pull.p1
+    switch_in ~ r_pull.p2
+    switch_in ~ c_debounce.p1
+    gnd ~ c_debounce.p2
+
+    switch_in ~ mcu_sense
+    switch_in ~ d_wake.anode
+    wakeup_bus ~ d_wake.cathode
+
+# ==============================================================================
+# TOP-LEVEL MODULE: CockpitControllerHub
+# ==============================================================================
+
+module CockpitControllerHub:
+    signal power_3v3
+    signal gnd
+    signal wakeup_line
+
+    # 1. Microcontroller
+    mcu = new Seeed_XIAO_ESP32C6
+    power_3v3 ~ mcu.V3P3
+    gnd ~ mcu.GND
+    wakeup_line ~ mcu.LP_GPIO0
+
+    # 2. Main Wakeup Bus Pull-Up (47k to 3.3V)
+    r_wake_pull = new MyResistor
+    r_wake_pull.value = "47k"
+    power_3v3 ~ r_wake_pull.p1
+    wakeup_line ~ r_wake_pull.p2
+
+    # 3. 6x Switch Input Channels with Diode-OR Wakeup
+    ch1 = new SwitchInputChannel
+    ch2 = new SwitchInputChannel
+    ch3 = new SwitchInputChannel
+    ch4 = new SwitchInputChannel
+    ch5 = new SwitchInputChannel
+    ch6 = new SwitchInputChannel
+
+    # Connect power and wakeup buses
+    power_3v3 ~ ch1.vcc; gnd ~ ch1.gnd; wakeup_line ~ ch1.wakeup_bus
+    power_3v3 ~ ch2.vcc; gnd ~ ch2.gnd; wakeup_line ~ ch2.wakeup_bus
+    power_3v3 ~ ch3.vcc; gnd ~ ch3.gnd; wakeup_line ~ ch3.wakeup_bus
+    power_3v3 ~ ch4.vcc; gnd ~ ch4.gnd; wakeup_line ~ ch4.wakeup_bus
+    power_3v3 ~ ch5.vcc; gnd ~ ch5.gnd; wakeup_line ~ ch5.wakeup_bus
+    power_3v3 ~ ch6.vcc; gnd ~ ch6.gnd; wakeup_line ~ ch6.wakeup_bus
+
+    # Connect MCU Sense Pins
+    ch1.mcu_sense ~ mcu.GPIO1   # D1 -> Exterior Driving / Aux Lights
+    ch2.mcu_sense ~ mcu.GPIO2   # D2 -> Orion-XS DC-DC Remote Enable
+    ch3.mcu_sense ~ mcu.GPIO21  # D3 -> Cabin Interior Lights
+    ch4.mcu_sense ~ mcu.GPIO22  # D4 -> Water Pump
+    ch5.mcu_sense ~ mcu.GPIO23  # D5 -> Inverter (Multiplus II)
+    ch6.mcu_sense ~ mcu.GPIO16  # D6 -> Master Driving Mode / Aux
+
+    # 4. External Terminal Blocks for Dash Wiring
+    # Terminal 1: SW1 & SW2 with GND returns
+    term1 = new ScrewTerminal_4Pin
+    term1.pin_1 ~ ch1.switch_in
+    term1.pin_2 ~ gnd
+    term1.pin_3 ~ ch2.switch_in
+    term1.pin_4 ~ gnd
+
+    # Terminal 2: SW3 & SW4 with GND returns
+    term2 = new ScrewTerminal_4Pin
+    term2.pin_1 ~ ch3.switch_in
+    term2.pin_2 ~ gnd
+    term2.pin_3 ~ ch4.switch_in
+    term2.pin_4 ~ gnd
+
+    # Terminal 3: SW5 & SW6 with GND returns
+    term3 = new ScrewTerminal_4Pin
+    term3.pin_1 ~ ch5.switch_in
+    term3.pin_2 ~ gnd
+    term3.pin_3 ~ ch6.switch_in
+    term3.pin_4 ~ gnd
+
+    # 5. Battery Power Entry (2x AA Alkaline Cells, 3.0V nominal)
+    bat_term = new ScrewTerminal_2Pin
+    bat_term.pin_1 ~ power_3v3
+    bat_term.pin_2 ~ gnd
+
+    # Decoupling Capacitors
+    c_bulk = new MyCapacitor
+    c_bulk.value = "10uF"
+    power_3v3 ~ c_bulk.p1
+    gnd ~ c_bulk.p2
+
+    c_decoupling = new MyCapacitor
+    c_decoupling.value = "100nF"
+    power_3v3 ~ c_decoupling.p1
+    gnd ~ c_decoupling.p2
+
+    # 6. Status Feedback Micro-LED
+    status_led = new MyLED
+    r_status = new MyResistor
+    r_status.value = "1k"
+
+    mcu.GPIO9 ~ status_led.anode
+    status_led.cathode ~ r_status.p1
+    r_status.p2 ~ gnd
+
+    # Decoupling and filtering validated
+

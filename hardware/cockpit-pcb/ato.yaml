@@ -1,0 +1,11 @@
+requires-atopile: "^0.15.7"
+
+paths:
+  src: ./
+  layout: ./layouts
+
+builds:
+  cockpit:
+    entry: cockpit.ato:CockpitControllerHub
+    paths:
+      layout: ./layouts/default

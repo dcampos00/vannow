@@ -1,0 +1,239 @@
+#pragma experiment("TRAITS")
+#pragma experiment("MODULE_TEMPLATING")
+
+import is_atomic_part
+import has_designator_prefix
+import has_part_picked
+
+# Atopile Circuit Design for VanNOW Master Magnetic Entrance Remote
+# 6 Tactile Zone Switches + EC11 Rotary Dimmer Knob + Status LED + Diode-OR Wakeup.
+
+# ==============================================================================
+# COMPONENT LIBRARY DEFINITIONS
+# ==============================================================================
+
+component MyResistor:
+    trait is_atomic_part<manufacturer="Generic", partnumber="R_0805", footprint="R_0805_2012Metric.kicad_mod", symbol="Device:R">
+    trait has_designator_prefix<prefix="R">
+    trait has_part_picked<manufacturer="Generic", partno="R_0805", supplier_partno="C17414", supplier_id="lcsc">
+    signal p1 ~ pin 1
+    signal p2 ~ pin 2
+    value = ""
+
+component MyCapacitor:
+    trait is_atomic_part<manufacturer="Generic", partnumber="C_0805", footprint="C_0805_2012Metric.kicad_mod", symbol="Device:C">
+    trait has_designator_prefix<prefix="C">
+    trait has_part_picked<manufacturer="Generic", partno="C_0805", supplier_partno="C17415", supplier_id="lcsc">
+    signal p1 ~ pin 1
+    signal p2 ~ pin 2
+    value = ""
+
+component MyLED:
+    trait is_atomic_part<manufacturer="Generic", partnumber="LED_0805", footprint="LED_0805_2012Metric.kicad_mod", symbol="Device:LED">
+    trait has_designator_prefix<prefix="D">
+    trait has_part_picked<manufacturer="Generic", partno="LED_0805", supplier_partno="C2286", supplier_id="lcsc">
+    signal anode ~ pin 1
+    signal cathode ~ pin 2
+
+component MyDiode:
+    trait is_atomic_part<manufacturer="Generic", partnumber="DO201_Diode", footprint="D_DO-201AD_P15.24mm_Horizontal.kicad_mod", symbol="Device:D">
+    trait has_designator_prefix<prefix="D">
+    trait has_part_picked<manufacturer="Generic", partno="DO201_Diode", supplier_partno="C12347", supplier_id="lcsc">
+    signal cathode ~ pin 1
+    signal anode ~ pin 2
+
+component Header_1x7:
+    trait is_atomic_part<manufacturer="Generic", partnumber="Header_1x7", footprint="PinSocket_1x07_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x07_Pin">
+    trait has_designator_prefix<prefix="J">
+    trait has_part_picked<manufacturer="Generic", partno="Header_1x7", supplier_partno="C12360", supplier_id="lcsc">
+    signal pin_1 ~ pin 1; signal pin_2 ~ pin 2; signal pin_3 ~ pin 3; signal pin_4 ~ pin 4
+    signal pin_5 ~ pin 5; signal pin_6 ~ pin 6; signal pin_7 ~ pin 7
+
+component Header_1x2:
+    trait is_atomic_part<manufacturer="Generic", partnumber="Header_1x2", footprint="PinSocket_1x02_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x02_Pin">
+    trait has_designator_prefix<prefix="J">
+    trait has_part_picked<manufacturer="Generic", partno="Header_1x2", supplier_partno="C12349", supplier_id="lcsc">
+    signal pin_1 ~ pin 1
+    signal pin_2 ~ pin 2
+
+component TactileSwitch_12mm:
+    trait is_atomic_part<manufacturer="Omron", partnumber="B3F-4055", footprint="SW_PUSH-12mm.kicad_mod", symbol="Switch:SW_Push">
+    trait has_designator_prefix<prefix="SW">
+    trait has_part_picked<manufacturer="Omron", partno="B3F-4055", supplier_partno="C12361", supplier_id="lcsc">
+    signal p1 ~ pin 1
+    signal p2 ~ pin 2
+
+component RotaryEncoder_EC11:
+    trait is_atomic_part<manufacturer="Alps", partnumber="EC11E15244G1", footprint="RotaryEncoder_Alps_EC11E-Switch_Vertical_H20mm.kicad_mod", symbol="Device:RotaryEncoder_Switch">
+    trait has_designator_prefix<prefix="SW">
+    trait has_part_picked<manufacturer="Alps", partno="EC11E15244G1", supplier_partno="C12362", supplier_id="lcsc">
+    signal pin_A ~ pin "A"
+    signal pin_B ~ pin "B"
+    signal pin_C ~ pin "C"
+    signal pin_S1 ~ pin "S1"
+    signal pin_S2 ~ pin "S2"
+
+# ==============================================================================
+# SUB-MODULES
+# ==============================================================================
+
+# Microcontroller Socket for Seeed Studio XIAO ESP32-C6
+module Seeed_XIAO_ESP32C6:
+    header_left = new Header_1x7
+    header_right = new Header_1x7
+
+    # Left Row (LP-GPIOs and HP Pins)
+    signal LP_GPIO0 ~ header_left.pin_1  # D0 (EXT1 Wakeup Line)
+    signal GPIO1    ~ header_left.pin_2  # D1 (Encoder Channel A)
+    signal GPIO2    ~ header_left.pin_3  # D2 (Encoder Channel B)
+    signal GPIO21   ~ header_left.pin_4  # D3 (Sense Zone 1)
+    signal GPIO22   ~ header_left.pin_5  # D4 (Sense Zone 2)
+    signal GPIO23   ~ header_left.pin_6  # D5 (Sense Zone 3)
+    signal GPIO16   ~ header_left.pin_7  # D6 (Sense Zone 4)
+
+    # Right Row
+    signal GPIO17   ~ header_right.pin_1 # D7 (Sense Water Pump)
+    signal GPIO19   ~ header_right.pin_2 # D8 (Sense Master Shutdown)
+    signal GPIO20   ~ header_right.pin_3 # D9 (Sense Encoder Push Switch)
+    signal GPIO9    ~ header_right.pin_4 # D10 (Status LED)
+    signal V3P3     ~ header_right.pin_5 # 3V3 Input
+    signal GND      ~ header_right.pin_6 # GND
+    signal V5       ~ header_right.pin_7 # 5V (NC)
+
+# Tactile Switch with Pull-Up, Debounce & Wakeup Diode
+module TactileButtonChannel:
+    signal mcu_sense
+    signal wakeup_bus
+    signal vcc
+    signal gnd
+
+    sw = new TactileSwitch_12mm
+    r_pull = new MyResistor
+    r_pull.value = "100k"
+    c_debounce = new MyCapacitor
+    c_debounce.value = "100nF"
+    d_wake = new MyDiode
+
+    vcc ~ r_pull.p1
+    sw.p1 ~ r_pull.p2
+    sw.p1 ~ c_debounce.p1
+    gnd ~ c_debounce.p2
+    gnd ~ sw.p2
+
+    sw.p1 ~ mcu_sense
+    sw.p1 ~ d_wake.anode
+    wakeup_bus ~ d_wake.cathode
+
+# ==============================================================================
+# TOP-LEVEL MODULE: MasterEntranceRemote
+# ==============================================================================
+
+module MasterEntranceRemote:
+    signal power_3v3
+    signal gnd
+    signal wakeup_line
+
+    # 1. Microcontroller
+    mcu = new Seeed_XIAO_ESP32C6
+    power_3v3 ~ mcu.V3P3
+    gnd ~ mcu.GND
+    wakeup_line ~ mcu.LP_GPIO0
+
+    # 2. Main Wakeup Bus Pull-Up (47k to 3.3V)
+    r_wake_pull = new MyResistor
+    r_wake_pull.value = "47k"
+    power_3v3 ~ r_wake_pull.p1
+    wakeup_line ~ r_wake_pull.p2
+
+    # 3. 6x Tactile Pushbuttons with Diode-OR Wakeup
+    btn_zone1 = new TactileButtonChannel
+    btn_zone2 = new TactileButtonChannel
+    btn_zone3 = new TactileButtonChannel
+    btn_zone4 = new TactileButtonChannel
+    btn_pump  = new TactileButtonChannel
+    btn_night = new TactileButtonChannel
+
+    # Connect power and wakeup buses
+    power_3v3 ~ btn_zone1.vcc; gnd ~ btn_zone1.gnd; wakeup_line ~ btn_zone1.wakeup_bus
+    power_3v3 ~ btn_zone2.vcc; gnd ~ btn_zone2.gnd; wakeup_line ~ btn_zone2.wakeup_bus
+    power_3v3 ~ btn_zone3.vcc; gnd ~ btn_zone3.gnd; wakeup_line ~ btn_zone3.wakeup_bus
+    power_3v3 ~ btn_zone4.vcc; gnd ~ btn_zone4.gnd; wakeup_line ~ btn_zone4.wakeup_bus
+    power_3v3 ~ btn_pump.vcc;  gnd ~ btn_pump.gnd;  wakeup_line ~ btn_pump.wakeup_bus
+    power_3v3 ~ btn_night.vcc; gnd ~ btn_night.gnd; wakeup_line ~ btn_night.wakeup_bus
+
+    # Connect Sense GPIOs to MCU
+    btn_zone1.mcu_sense ~ mcu.GPIO21 # D3 -> Zone 1 (Main Ceiling)
+    btn_zone2.mcu_sense ~ mcu.GPIO22 # D4 -> Zone 2 (Kitchen Galley)
+    btn_zone3.mcu_sense ~ mcu.GPIO23 # D5 -> Zone 3 (Bed / Reading)
+    btn_zone4.mcu_sense ~ mcu.GPIO16 # D6 -> Zone 4 (Porch / Awning)
+    btn_pump.mcu_sense  ~ mcu.GPIO17 # D7 -> Water Pump
+    btn_night.mcu_sense ~ mcu.GPIO19 # D8 -> Master Night Shutdown (All OFF)
+
+    # 4. Master EC11 Rotary Encoder Station
+    encoder = new RotaryEncoder_EC11
+    encoder.pin_C ~ gnd
+    encoder.pin_S2 ~ gnd
+
+    # Channel A Pull-Up & Filter
+    r_enc_a = new MyResistor
+    r_enc_a.value = "10k"
+    c_enc_a = new MyCapacitor
+    c_enc_a.value = "10nF"
+    power_3v3 ~ r_enc_a.p1
+    encoder.pin_A ~ r_enc_a.p2
+    encoder.pin_A ~ c_enc_a.p1
+    gnd ~ c_enc_a.p2
+    encoder.pin_A ~ mcu.GPIO1 # D1 (LP-GPIO 1, wakes on rotation)
+
+    # Channel B Pull-Up & Filter
+    r_enc_b = new MyResistor
+    r_enc_b.value = "10k"
+    c_enc_b = new MyCapacitor
+    c_enc_b.value = "10nF"
+    power_3v3 ~ r_enc_b.p1
+    encoder.pin_B ~ r_enc_b.p2
+    encoder.pin_B ~ c_enc_b.p1
+    gnd ~ c_enc_b.p2
+    encoder.pin_B ~ mcu.GPIO2 # D2 (LP-GPIO 2, wakes on rotation)
+
+    # Encoder Push Switch Channel (SW)
+    r_enc_sw = new MyResistor
+    r_enc_sw.value = "100k"
+    c_enc_sw = new MyCapacitor
+    c_enc_sw.value = "100nF"
+    d_enc_wake = new MyDiode
+
+    power_3v3 ~ r_enc_sw.p1
+    encoder.pin_S1 ~ r_enc_sw.p2
+    encoder.pin_S1 ~ c_enc_sw.p1
+    gnd ~ c_enc_sw.p2
+    encoder.pin_S1 ~ mcu.GPIO20 # D9 (Encoder Center Button)
+
+    # Connect to Wakeup Bus
+    encoder.pin_S1 ~ d_enc_wake.anode
+    wakeup_line ~ d_enc_wake.cathode
+
+    # 5. Battery Power Entry (2x AA Battery Bay, 3.0V nominal)
+    bat_term = new Header_1x2
+    bat_term.pin_1 ~ power_3v3
+    bat_term.pin_2 ~ gnd
+
+    # Bulk Decoupling Capacitors
+    c_bulk = new MyCapacitor
+    c_bulk.value = "10uF"
+    power_3v3 ~ c_bulk.p1
+    gnd ~ c_bulk.p2
+
+    c_decoupling = new MyCapacitor
+    c_decoupling.value = "100nF"
+    power_3v3 ~ c_decoupling.p1
+    gnd ~ c_decoupling.p2
+
+    # 6. Status Feedback Micro-LED
+    status_led = new MyLED
+    r_status = new MyResistor
+    r_status.value = "1k"
+
+    mcu.GPIO9 ~ status_led.anode
+    status_led.cathode ~ r_status.p1
+    r_status.p2 ~ gnd

@@ -1,0 +1,11 @@
+requires-atopile: "^0.15.7"
+
+paths:
+  src: ./
+  layout: ./layouts
+
+builds:
+  entrance_remote:
+    entry: entrance_remote.ato:MasterEntranceRemote
+    paths:
+      layout: ./layouts/default
