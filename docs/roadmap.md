@@ -15,7 +15,7 @@ El sistema VanNOW hoy tiene:
 - ✅ Telemetría de batería en remotos y central
 - ✅ Mapeo de paneles a canales en [`SystemController`](../firmware/central/src/SystemController.cpp)
 - ✅ Tests unitarios nativos para channels y handlers
-- ✅ Diseño PCB en Atopile ([`central.ato`](../hardware/central_pcb/central.ato))
+- ✅ Diseño PCB en Atopile ([`central.ato`](../hardware/central-pcb/central.ato))
 - ⬜ Sin persistencia de estado (se pierde al reiniciar)
 - ⬜ Sin feedback visual al usuario en los remotos
 - ⬜ Sin interfaz de diagnóstico/configuración

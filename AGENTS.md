@@ -42,3 +42,44 @@ This repository follows strict software development guidelines. When working on 
 4. **Component Quality & Compatibility:**
    - Always prioritize high-quality, verified compatible components (e.g., modules from reputable brands like Pololu, Adafruit, SparkFun, or original components from distributors like Mouser/DigiKey) over cheap unbranded clones.
    - Avoid generic, counterfeit buck converters (e.g., fake LM2596 boards) which suffer from high voltage ripple, low efficiency, and high failure rates. Instead, recommend robust, high-efficiency regulators (like Pololu regulators or genuine MP1584EN boards) to prevent damage to downstream microcontrollers.
+
+---
+
+## Repository Knowledge Base & Documentation Index
+
+Before implementing firmware modifications or hardware schematic revisions, agents MUST consult the relevant authoritative specifications in `docs/` (or the master navigation hub in [`docs/README.md`](docs/README.md)):
+
+### 1. Mandatory Pre-Implementation Reading
+- **Hardware & Electrical Constraints:** [`docs/logic_audit_2026-09-03.md`](docs/logic_audit_2026-09-03.md) (Mandatory audit: details 7 critical fixes including ESP32-S3 pinout socket inversions, BTS5008 200 Hz PWM limits, and ADC divider Zener leakage).
+- **Physical Safety & Inductive Loads:** [`docs/analisis_critico_riesgos.md`](docs/analisis_critico_riesgos.md) (1N5408 pump flyback, PC817 diesel heater & fridge compressor control, external ON-OFF-AUTO bypass toggles).
+- **Firmware Architecture & State Machines:** [`docs/firmware_documentation.md`](docs/firmware_documentation.md) (Unified specification of classes, FSMs, 200 Hz LEDC PWM, and binary matrix decoding).
+- **Mechanical & Spatial Clearances:** [`docs/mechanical_and_enclosure_specs.md`](docs/mechanical_and_enclosure_specs.md) (230x190x85 mm cabinet envelope, 50 mm wiring drop, magnetic dockable remote retention).
+
+### 2. Documentation Index by Functional Domain
+
+| Category | File | Description |
+| :--- | :--- | :--- |
+| **Architecture** | [`docs/propuesta_proyecto.md`](docs/propuesta_proyecto.md) | Original approved system proposal and channel mapping |
+| | [`docs/roadmap.md`](docs/roadmap.md) | Implementation roadmap & prioritized feature tiers (Tiers 1–4) |
+| | [`docs/gestion_repositorios_dual.md`](docs/gestion_repositorios_dual.md) | Dual-repo private/public sync strategy & `sync_public.sh` usage |
+| **Firmware & Protocol** | [`docs/firmware_documentation.md`](docs/firmware_documentation.md) | Unified firmware architecture, class design & test setup |
+| | [`docs/atenuacion_remota.md`](docs/atenuacion_remota.md) | Remote dimmer UX (Click vs Hold ramp logic) |
+| | [`docs/control_encoder_rotativo.md`](docs/control_encoder_rotativo.md) | EC11 rotary encoder FSM, 1.5s active timeout & protocol |
+| | [`docs/analisis_seguridad_rf.md`](docs/analisis_seguridad_rf.md) | RF threat analysis; justification for discarding 433 MHz |
+| | [`docs/integracion_cc1101_433mhz.md`](docs/integracion_cc1101_433mhz.md) | CC1101 sub-GHz transceiver SPI evaluation (alternative) |
+| **Hardware & Mechanical** | [`docs/mechanical_and_enclosure_specs.md`](docs/mechanical_and_enclosure_specs.md) | Master mechanical specification, cabinet & magnetic dock |
+| | [`docs/evaluacion_hardware.md`](docs/evaluacion_hardware.md) | ESP32-S3 vs C6 MCU selection & I2C expander trade-offs |
+| | [`docs/opciones_encoders_bajo_perfil.md`](docs/opciones_encoders_bajo_perfil.md) | 5 mm low-profile encoder hardware selection |
+| | [`docs/lista_compras_prototipo.md`](docs/lista_compras_prototipo.md) | Breadboard prototype bill of materials & wiring guide |
+| | [`docs/references/`](docs/references/) | Component datasheets (PROFETs, MOSFETs, XIAO, ESP32) |
+| **Audits & Verification** | [`docs/logic_audit_2026-09-03.md`](docs/logic_audit_2026-09-03.md) | **Active Audit:** 7 critical flaws in hardware & firmware |
+| | [`docs/auditoria_logica_2026-07-11.md`](docs/auditoria_logica_2026-07-11.md) | Baseline audit (historical context & pinout evolution) |
+| | [`docs/analisis_critico_riesgos.md`](docs/analisis_critico_riesgos.md) | Automotive safety, inductive spikes & manual bypass |
+| **Feasibility & Budgets** | [`docs/eficiencia_energetica.md`](docs/eficiencia_energetica.md) | Standby energy budget (0.15 W vs 10–15 W Home Assistant) |
+| | [`docs/evaluacion_costos_vanpi.md`](docs/evaluacion_costos_vanpi.md) | Cost evaluation ($137 DIY vs $380 VanPi) |
+| | [`docs/proyectos_existentes_maduros.md`](docs/proyectos_existentes_maduros.md) | Benchmark of existing camper automation systems |
+| | [`docs/estimacion_complejidad_tiempo.md`](docs/estimacion_complejidad_tiempo.md) | 4-phase project timeline & hours estimation |
+
+> [!NOTE]
+> All new documentation and code must be authored in English per the directive in this file. Legacy Spanish documents remain authoritative for system logic unless explicitly superseded.
+

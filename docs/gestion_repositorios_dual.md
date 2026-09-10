@@ -28,7 +28,7 @@ Mantienes dos carpetas locales completamente independientes en tu ordenador:
 ### Paso 2: Crear el Script de Sincronización
 En tu repositorio privado, creamos un script automático (`sync_public.sh`) que limpie el repositorio público, copie únicamente los archivos públicos, realice el commit y suba los cambios.
 
-He creado el script de sincronización en tu carpeta raíz: [`sync_public.sh`](file:///Users/daniel/Projects/vannow/sync_public.sh). Su lógica es:
+He creado el script de sincronización en tu carpeta raíz: [`sync_public.sh`](../sync_public.sh). Su lógica es:
 *   Borra el contenido de la carpeta pública (excepto la carpeta `.git`).
 *   Copia la estructura de `firmware/`, `hardware/`, el `README.md` y **únicamente** el documento oficial `docs/propuesta_proyecto.md`.
 *   Deja fuera todos los documentos de análisis de costos, riesgos, seguridad y encoders.

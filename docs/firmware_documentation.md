@@ -191,7 +191,7 @@ classDiagram
 
 1.  **[Channel](../firmware/central/src/Channel.h):** Interfaz base abstracta que gestiona propiedades como el nombre, pin físico y estado activo.
 2.  **[DigitalChannel](../firmware/central/src/DigitalChannel.h):** Controla salidas ON/OFF estándar (relés, PROFETs, optoacopladores). Implementa una lógica simple de conmutación (Toggle) al recibir un evento de `ActionType::Click`.
-3.  **[DimmableChannel](../firmware/central/src/DimmableChannel.h):** Controla la iluminación LED por modulación de ancho de pulso (PWM) mediante el periférico `LEDC` del ESP32. Soporta:
+3.  **[DimmableChannel](../firmware/central/src/DimmableChannel.h):** Controla la iluminación LED por modulación de ancho de pulso (PWM) mediante el periférico `LEDC` del ESP32 a **200 Hz** (frecuencia optimizada para los tiempos de conmutación $t_{ON}/t_{OFF} \le 250\,\mu\text{s}$ de los PROFETs Infineon BTS5008-1EKB, evitando disipación térmica excesiva):
     - **Smooth Click Fading:** Al hacer click, la iluminación no se enciende de golpe; realiza una rampa gradual (fade) hacia el estado objetivo a un intervalo de **5 ms por paso de brillo**.
     - **Continuous Hold Ramping:** Al iniciar un Hold (`StartHold`), incrementa o decrementa continuamente el brillo en **1% cada 30 ms**. Si el usuario alcanza los límites (100% o 5%), el sentido de la rampa se invierte automáticamente.
     - **Hold Safety Timeout:** Si no recibe mensajes periódicos de Hold en **300 ms**, detiene automáticamente la rampa para evitar desbordamientos de brillo si se corta la comunicación inalámbrica.
@@ -237,12 +237,28 @@ El firmware del remoto está diseñado con el fin exclusivo de ahorrar energía,
 2.  **[ButtonHandler](../firmware/remote/src/ButtonHandler.h):** Implementa una máquina de estados finitos (FSM) para debouncing por software (15 ms) y discriminación de pulsaciones:
     - **Pulsación Corta (Click):** Se libera el botón antes de **400 ms**.
     - **Pulsación Larga (Hold):** Si el botón se mantiene presionado más de **400 ms**, envía un mensaje de `StartHold` y emite repeticiones continuas del comando cada **150 ms** para mantener informada a la central. Al soltarlo, envía el mensaje `Release`.
-3.  **[EncoderHandler](../firmware/remote/src/EncoderHandler.h):** Decodifica transiciones de código Gray de encoders rotativos (ej. EC11) monitoreando los pines A y B (conectados a pines de interrupción LP-GPIO `D0` y `D1`), y el pulsador integrado en el eje (pin `D2`).
-4.  **[RemoteSender](../firmware/remote/src/RemoteSender.h):** Encapsula el envío de mensajes y telemetría de batería por ESP-NOW. Centraliza la inicialización de la pila de red, el registro del callback de estado de envío y el peer receptor, controlando también la espera y validación del ACK de entrega del paquete.
+3.  **[EncoderHandler](../firmware/remote/src/EncoderHandler.h):** Decodifica transiciones de código Gray de encoders rotativos (ej. EC11) monitoreando los pines A y B (conectados a pines de interrupción LP-GPIO `D0` y `D1`), y el pulsador integrado en el eje (pin LP-GPIO `D2`).
+4.  **[BinaryMatrixHandler](../firmware/remote/src/BinaryMatrixHandler.h):** Decodifica hasta **7 pulsadores táctiles** utilizando únicamente los 3 pines LP (`D0`, `D1`, `D2`) mediante una matriz de diodos binaria activa en nivel bajo. Realiza debouncing de 15 ms, discriminación de clicks cortos, repetición periódica de eventos de pulsación larga (`StartHold` cada 150 ms) y detección de liberación (`Release`), con **0 µA de consumo adicional en reposo**.
+5.  **[RemoteSender](../firmware/remote/src/RemoteSender.h):** Encapsula el envío de mensajes y telemetría de batería por ESP-NOW. Centraliza la inicialización de la pila de red, el registro del callback de estado de envío y el peer receptor, controlando también la espera y validación del ACK de entrega del paquete.
+
+#### Arquitectura de Multiplexación y Despertar (Seeed Studio XIAO ESP32-C6)
+
+El chip ESP32-C6 separa estrictamente los pines de bajo consumo (LP-GPIO 0–7) de los de alto rendimiento (HP-GPIO 8–23). En la placa Seeed Studio XIAO ESP32-C6, únicamente **D0 (GPIO 0), D1 (GPIO 1) y D2 (GPIO 2)** son LP-GPIOs expuestos en los conectores hembra capaces de despertar al microcontrolador de Deep Sleep mediante `EXT1`. El pin **D3 (GPIO 21)** pertenece al dominio HP y **no puede despertar el microcontrolador** en suspensión profunda. 
+
+Estrategia de implementación de botoneras:
+- **Estrategia Actual (Implementada): Matriz Binaria con Diodos (Hasta 7 Botones en D0, D1, D2):**
+  - Utiliza 12 diodos estándar (1N4148 o BAT54). Cualquier pulsador arrastra al menos un pin LP a masa (`EXT1_WAKEUP_ANY_LOW`), despertando al microcontrolador de forma instantánea ($<1\,\mu\text{s}$ de decodificación).
+  - No requiere ningún circuito integrado activo ni drivers I2C, garantizando la máxima robustez en entornos con vibraciones y ruido electromagnético.
+- **Panel Encoder (Implementado):** 1 codificador rotativo con pulsador ocupando exactamente `D0` (Fase A), `D1` (Fase B) y `D2` (Switch).
+- **Hoja de Ruta para Expansión Futura (Hasta 16 Botones):**
+  - Si en el futuro se requiriera una botonera extendida (ej. 12 a 16 teclas), se implementará una **Matriz Filas $\times$ Columnas con Diodo Wakeup**:
+    - Pin de interrupción compartida: **D0** (LP-GPIO 0) mediante diodos Schottky desde todas las teclas para el despertar `EXT1`.
+    - Filas y Columnas: Pines HP disponibles en la cabecera (**D3 a D8**).
+    - Permite hasta una matriz $4 \times 4$ (16 botones) manteniendo el protocolo ESP-NOW y el código central completamente transparentes.
 
 #### Telemetría de Batería del Remoto
 
-El remoto mide su propia tensión de alimentación (baterías AA) mediante un divisor resistivo simétrico de **100kΩ / 100kΩ** conectado a la entrada analógica **GPIO 4 (D4)**. El valor medido se adjunta en cada mensaje de transmisión (`battery_voltage`). Si la tensión reportada desciende de **2.2V**, el receptor central emite una alerta por puerto serie indicando la necesidad de cambiar las baterías del panel respectivo.
+El remoto mide su propia tensión de alimentación (baterías AA) mediante un divisor resistivo conectado a una entrada analógica protegida. El valor medido se adjunta en cada mensaje de transmisión (`battery_voltage`). Si la tensión reportada desciende de **2.2V**, el receptor central emite una alerta indicando la necesidad de cambiar las baterías del panel respectivo.
 
 ---
 

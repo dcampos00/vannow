@@ -6,8 +6,10 @@ Este proyecto (**VanNOW**) contiene el diseño de hardware (como código) y el f
 
 ## Estructura del Repositorio
 
-- **`docs/`**: Contiene la documentación del proyecto, decisiones de arquitectura y especificaciones eléctricas.
+- **`docs/`**: Contiene la documentación técnica, decisiones de arquitectura, especificaciones mecánicas y auditorías.
+  - [**docs/README.md**](docs/README.md): **Centro de Documentación y Catálogo Maestro.**
   - [propuesta_proyecto.md](docs/propuesta_proyecto.md): Propuesta inicial aprobada.
+  - [mechanical_and_enclosure_specs.md](docs/mechanical_and_enclosure_specs.md): Especificaciones de enclosures, cotas y mandos magnéticos.
 - **`firmware/`**: Código fuente C++ para los microcontroladores (gestión con PlatformIO).
   - **`central/`**: Firmware del receptor en el gabinete eléctrico central. Controla MOSFETs, PROFETs y optoacopladores.
     - [platformio.ini](firmware/central/platformio.ini)
@@ -15,10 +17,11 @@ Este proyecto (**VanNOW**) contiene el diseño de hardware (como código) y el f
   - **`remote/`**: Firmware para los paneles de pulsadores inalámbricos autónomos. Utiliza Deep Sleep profundo y envía comandos al central.
     - [platformio.ini](firmware/remote/platformio.ini)
     - [src/main.cpp](firmware/remote/src/main.cpp)
-- **`hardware/`**: Código de diseño de circuito impreso (PCB) utilizando la plataforma de Hardware-as-Code **Atopile**.
-  - **`central-pcb/`**:
+- **`hardware/`**: Código de diseño de circuito impreso (PCB) y modelos CAD paramétricos 3D.
+  - **`central-pcb/`**: Diseño Atopile de la placa de control central.
     - [ato.yaml](hardware/central-pcb/ato.yaml)
     - [central.ato](hardware/central-pcb/central.ato): Esquema y conexiones de la placa central.
+  - **`enclosures/`**: Modelos 3D paramétricos generados con Python (`build123d`), archivos STEP/STL y renders.
 
 ---
 

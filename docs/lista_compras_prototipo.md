@@ -32,7 +32,7 @@ Para el prototipo en protoboard, utilizaremos componentes en formato "módulo" (
 
 - [x] **4x Pulsadores Táctiles de Protoboard (momentáneos):** Botones pequeños estándar.
 - [x] **1x Encoder Rotativo EC11 (con botón pulsador integrado, compatible con protoboard):**
-  - _Nota:_ Altamente recomendado si deseas probar el sistema de atenuación (dimmer) táctil y premium para las luces. Permite regular el brillo girando el eje y encender/apagar pulsando la perilla. La lógica de consumo y conexión se detalla en [control_encoder_rotativo.md](file:///home/daniel/Projects/vannow/docs/control_encoder_rotativo.md).
+  - _Nota:_ Altamente recomendado si deseas probar el sistema de atenuación (dimmer) táctil y premium para las luces. Permite regular el brillo girando el eje y encender/apagar pulsando la perilla. La lógica de consumo y conexión se detalla en [control_encoder_rotativo.md](control_encoder_rotativo.md).
 - [x] **1x Portapilas para 2 Baterías AA (o portapilas 18650):** Para alimentar el remoto de forma autónoma.
 - [x] **2x Pilas AA (alcalinas normales o recargables):** Voltaje total ~3V.
 
