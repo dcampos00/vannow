@@ -18,6 +18,7 @@ Welcome to the **VanNOW** (Wireless Camper Van Relay System) engineering knowled
 ### 1. Architecture, System Design & Planning
 | Document | Language | Status | Summary |
 | :--- | :---: | :---: | :--- |
+| [**project_status_and_tracking.md**](project_status_and_tracking.md) | EN | Active (Master) | Cross-domain project status, component tracking dashboard, DRC status, and manufacturing checklist. |
 | [**propuesta_proyecto.md**](propuesta_proyecto.md) | ES | Active (Base) | Approved baseline project proposal: ESP-NOW wireless topology, 12V channel definitions, and Atopile introduction. |
 | [**roadmap.md**](roadmap.md) | ES/EN | Active (Living) | Prioritized 4-tier feature roadmap (NVS persistence, WDT, anti-replay, scenes, LED feedback, web diagnostics). |
 | [**gestion_repositorios_dual.md**](gestion_repositorios_dual.md) | ES | Active (Ops) | Private/public repo synchronization procedure and `sync_public.sh` documentation. |
