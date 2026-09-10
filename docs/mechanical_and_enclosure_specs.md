@@ -135,3 +135,25 @@ For DIY fabrication via 3D printing:
 | **Infill Density** | $30\% - 40\%$ (Gyroid or Grid) | $25\%$ (Gyroid) |
 | **Threaded Fasteners** | M3 $\times$ 4.0 mm brass heat-set inserts | M2.5 $\times$ 3.0 mm brass heat-set inserts |
 | **Wall Perimeters** | 4 perimeters ($1.6\,\text{mm}$ wall thickness) | 3 perimeters ($1.2\,\text{mm}$ wall thickness) |
+
+---
+
+## 6. Parametric CAD Models & 3D Engineering Verification
+
+All enclosures and cradles are generated programmatically using **`build123d` (Python Code-as-CAD on OpenCASCADE)** and verified with a custom headless **software Z-buffer rasterizer**.
+
+### 6.1 Generated CAD Inventory
+
+| Part Name | File (STEP / STL) | Outer Envelope ($X \times Y \times Z$) | Solid Volume | Key Engineering Features |
+| :--- | :--- | :---: | :---: | :--- |
+| **Central Enclosure Base** | [`central_enclosure_base.step`](../hardware/enclosures/models/central_enclosure_base.step) | $219.0 \times 127.2 \times 47.2\,\text{mm}$ | $166.6\,\text{cm}^3$ | Integrated M4 mounting ears, stepped alignment lip ($+2.2\,\text{mm}$), 4x gusseted M3 standoff towers, 4x PG9/PG11 gland collars, passive side vents. |
+| **Central Enclosure Lid** | [`central_enclosure_lid.step`](../hardware/enclosures/models/central_enclosure_lid.step) | $175.0 \times 125.0 \times 18.0\,\text{mm}$ | $100.4\,\text{cm}^3$ | $3.5\,\text{mm}$ top wall, $1.5\,\text{mm}$ counterbore clamping shoulder, internal boss columns, perimeter mating groove, 5x SPDT keyway notches. |
+| **Remote Enclosure Body** | [`remote_enclosure_body.step`](../hardware/enclosures/models/remote_enclosure_body.step) | $86.0 \times 86.0 \times 18.0\,\text{mm}$ | $39.6\,\text{cm}^3$ | $3.5\,\text{mm}$ floor ($1.4\,\text{mm}$ solid backing behind magnets), 4x edge-centered magnet pockets, 2x AA battery bay, 4x M2.5 corner bosses. |
+| **Remote Faceplate** | [`remote_enclosure_faceplate.step`](../hardware/enclosures/models/remote_enclosure_faceplate.step) | $86.0 \times 86.0 \times 5.4\,\text{mm}$ | $33.4\,\text{cm}^3$ | Stepped alignment tongue, 4x M2.5 countersinks, 6x chamfered button apertures, recessed rotary dial pocket with anti-rotation tab, LED light cone. |
+| **Magnetic Wall Cradle** | [`remote_magnetic_cradle.step`](../hardware/enclosures/models/remote_magnetic_cradle.step) | $96.0 \times 96.0 \times 11.0\,\text{mm}$ | $47.9\,\text{cm}^3$ | $45^\circ$ self-centering lead-in chamfer, **dual ergonomic finger extraction scallops** ($R=16\,\text{mm}$), 4x magnet pockets, 2x recessed wall countersinks. |
+
+### 6.2 Automation Scripts & Skills
+* **Parametric Generator:** [`hardware/enclosures/scripts/generate_enclosures.py`](../hardware/enclosures/scripts/generate_enclosures.py)
+* **Software Z-Buffer Renderer:** [`hardware/enclosures/scripts/render_stl.py`](../hardware/enclosures/scripts/render_stl.py)
+* **CAD Design Skill & Reference Standards:** [`.agents/skills/parametric-cad-enclosures/SKILL.md`](../.agents/skills/parametric-cad-enclosures/SKILL.md)
+

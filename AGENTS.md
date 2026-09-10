@@ -80,6 +80,10 @@ Before implementing firmware modifications or hardware schematic revisions, agen
 | | [`docs/proyectos_existentes_maduros.md`](docs/proyectos_existentes_maduros.md) | Benchmark of existing camper automation systems |
 | | [`docs/estimacion_complejidad_tiempo.md`](docs/estimacion_complejidad_tiempo.md) | 4-phase project timeline & hours estimation |
 
+### 3. Engineering Skills & Design Standards
+- **Schematic & PCB Design:** [`.agents/skills/schematic-design/SKILL.md`](.agents/skills/schematic-design/SKILL.md) (Automotive 12V power entry, PROFET switching, ADC clamping, Atopile Hardware-as-Code assertions).
+- **Parametric 3D CAD & Mesh Verification:** [`.agents/skills/parametric-cad-enclosures/SKILL.md`](.agents/skills/parametric-cad-enclosures/SKILL.md) (build123d Code-as-CAD, heat-set fastener sizing, stepped joints, ergonomic extraction, and headless software Z-buffer rendering).
+
 > [!NOTE]
 > All new documentation and code must be authored in English per the directive in this file. Legacy Spanish documents remain authoritative for system logic unless explicitly superseded.
 
