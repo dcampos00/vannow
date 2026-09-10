@@ -36,9 +36,9 @@ component MyLED:
     signal cathode ~ pin 2
 
 component MyDiode:
-    trait is_atomic_part<manufacturer="Generic", partnumber="DO201_Diode", footprint="D_DO-201AD_P15.24mm_Horizontal.kicad_mod", symbol="Device:D">
+    trait is_atomic_part<manufacturer="Generic", partnumber="1N4148W", footprint="D_SOD-123.kicad_mod", symbol="Device:D">
     trait has_designator_prefix<prefix="D">
-    trait has_part_picked<manufacturer="Generic", partno="DO201_Diode", supplier_partno="C12347", supplier_id="lcsc">
+    trait has_part_picked<manufacturer="Generic", partno="1N4148W", supplier_partno="C81598", supplier_id="lcsc">
     signal cathode ~ pin 1
     signal anode ~ pin 2
 
@@ -121,8 +121,8 @@ module TactileButtonChannel:
     gnd ~ sw.p2
 
     sw.p1 ~ mcu_sense
-    sw.p1 ~ d_wake.anode
-    wakeup_bus ~ d_wake.cathode
+    wakeup_bus ~ d_wake.anode
+    sw.p1 ~ d_wake.cathode
 
 # ==============================================================================
 # TOP-LEVEL MODULE: MasterEntranceRemote
@@ -210,8 +210,8 @@ module MasterEntranceRemote:
     encoder.pin_S1 ~ mcu.GPIO20 # D9 (Encoder Center Button)
 
     # Connect to Wakeup Bus
-    encoder.pin_S1 ~ d_enc_wake.anode
-    wakeup_line ~ d_enc_wake.cathode
+    wakeup_line ~ d_enc_wake.anode
+    encoder.pin_S1 ~ d_enc_wake.cathode
 
     # 5. Battery Power Entry (2x AA Battery Bay, 3.0V nominal)
     bat_term = new Header_1x2
