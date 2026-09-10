@@ -92,6 +92,14 @@ When designing battery-powered remotes (e.g., ESP32-C6):
 
 ---
 
+### Step 6: PCB 3D Rendering, Mechanical CAD Export & Fit Check
+Before fabricating PCBs, verify component clearances, connector ergonomics, and enclosure mechanical fit:
+1. **Raytraced 3D Render:** Run `kicad-cli pcb render` with perspective and floor shadows to inspect physical component spacing and silkscreen legibility.
+2. **Populated 3D STEP Export:** Export board solid via `kicad-cli pcb export step --subst-models` and import into `build123d` enclosure models to verify standoff alignment and port clearances.
+3. Detailed guide: [pcb_rendering_and_visualization.md](./references/pcb_rendering_and_visualization.md)
+
+---
+
 ## Verification & Pre-Fabrication Checklist
 
 Before ordering PCBs or committing schematic changes, verify every item in this checklist:

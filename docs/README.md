@@ -38,6 +38,7 @@ Welcome to the **VanNOW** (Wireless Camper Van Relay System) engineering knowled
 | [**evaluacion_hardware.md**](evaluacion_hardware.md) | ES | Decision | Hardware selection: Lonely Binary ESP32-S3 N16R8 for Central, XIAO ESP32-C6 for Remotes, PCA9685 vs direct GPIOs. |
 | [**opciones_encoders_bajo_perfil.md**](opciones_encoders_bajo_perfil.md) | ES | Component | Low-profile (5 mm) encoder selection: Panasonic EVQ-WGD thumbwheel, Alps EC12E SMD, and Alps EC10E hollow-shaft. |
 | [**lista_compras_prototipo.md**](lista_compras_prototipo.md) | ES | Lab Guide | Component checklist and wiring guide for the breadboard prototype, including 3-step test plan. |
+| [**skills/schematic-design**](../.agents/skills/schematic-design/SKILL.md) | EN | Skill | Comprehensive guide for Hardware-as-Code (Atopile), automotive power entry, PROFET switching, ADC clamping, and automated KiCad 3D PCB rendering. |
 | [**skills/parametric-cad-enclosures**](../.agents/skills/parametric-cad-enclosures/SKILL.md) | EN | Skill | Production guide for Python Code-as-CAD (`build123d`), heat-set fastener sizing, stepped joints, and software Z-buffer mesh verification. |
 | [**references/**](references/) | PDF/XLSX | Assets | Official component datasheets (BTS5008 PROFET, MP1584EN, PC817, ESP32-S3, ESP32-C6). |
 
