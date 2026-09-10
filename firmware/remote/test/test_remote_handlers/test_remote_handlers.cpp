@@ -178,6 +178,84 @@ void test_power_manager_sleep_execution(void) {
     TEST_ASSERT_TRUE(true);
 }
 
+#include "BinaryMatrixHandler.h"
+
+void test_binary_matrix_click(void) {
+    BinaryMatrixHandler matrix(0, 1, 2);
+    matrix.begin();
+
+    // All pins default HIGH (no button pressed)
+    ArduinoMock::setPinState(0, HIGH);
+    ArduinoMock::setPinState(1, HIGH);
+    ArduinoMock::setPinState(2, HIGH);
+
+    uint8_t btnIdx = 255;
+    ActionType action;
+    TEST_ASSERT_FALSE(matrix.checkEvent(btnIdx, action));
+    TEST_ASSERT_EQUAL(-1, matrix.readRawButton());
+
+    // Test Button 2 (Code 3: pin 0 = LOW, pin 1 = LOW, pin 2 = HIGH)
+    ArduinoMock::setPinState(0, LOW);
+    ArduinoMock::setPinState(1, LOW);
+    TEST_ASSERT_EQUAL(2, matrix.readRawButton());
+    TEST_ASSERT_FALSE(matrix.checkEvent(btnIdx, action)); // Debounce started
+
+    // Pass debounce (25 ms)
+    ArduinoMock::advanceMillis(25);
+    TEST_ASSERT_FALSE(matrix.checkEvent(btnIdx, action)); // Transitioned to Pressed
+
+    // Release button
+    ArduinoMock::setPinState(0, HIGH);
+    ArduinoMock::setPinState(1, HIGH);
+    ArduinoMock::advanceMillis(15); // Release debounce
+
+    TEST_ASSERT_TRUE(matrix.checkEvent(btnIdx, action));
+    TEST_ASSERT_EQUAL(2, btnIdx); // Button 2
+    TEST_ASSERT_EQUAL(ActionType::Click, action);
+}
+
+void test_binary_matrix_hold_and_release(void) {
+    BinaryMatrixHandler matrix(0, 1, 2);
+    matrix.begin();
+
+    ArduinoMock::setPinState(0, HIGH);
+    ArduinoMock::setPinState(1, HIGH);
+    ArduinoMock::setPinState(2, HIGH);
+
+    // Press Button 4 (Code 5: pin 0 = LOW, pin 1 = HIGH, pin 2 = LOW)
+    ArduinoMock::setPinState(0, LOW);
+    ArduinoMock::setPinState(2, LOW);
+    TEST_ASSERT_EQUAL(4, matrix.readRawButton());
+
+    uint8_t btnIdx = 255;
+    ActionType action;
+    matrix.checkEvent(btnIdx, action);
+
+    // Advance 25 ms debounce
+    ArduinoMock::advanceMillis(25);
+    matrix.checkEvent(btnIdx, action);
+
+    // Advance 450 ms (hold threshold 400 ms)
+    ArduinoMock::advanceMillis(450);
+    TEST_ASSERT_TRUE(matrix.checkEvent(btnIdx, action));
+    TEST_ASSERT_EQUAL(4, btnIdx);
+    TEST_ASSERT_EQUAL(ActionType::StartHold, action);
+
+    // Advance 150 ms (periodic hold repeat)
+    ArduinoMock::advanceMillis(150);
+    TEST_ASSERT_TRUE(matrix.checkEvent(btnIdx, action));
+    TEST_ASSERT_EQUAL(4, btnIdx);
+    TEST_ASSERT_EQUAL(ActionType::StartHold, action);
+
+    // Release
+    ArduinoMock::setPinState(0, HIGH);
+    ArduinoMock::setPinState(2, HIGH);
+    ArduinoMock::advanceMillis(15);
+    TEST_ASSERT_TRUE(matrix.checkEvent(btnIdx, action));
+    TEST_ASSERT_EQUAL(4, btnIdx);
+    TEST_ASSERT_EQUAL(ActionType::Release, action);
+}
+
 int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(test_button_handler_click);
@@ -187,5 +265,8 @@ int main(int argc, char **argv) {
     RUN_TEST(test_encoder_handler_ccw_and_noop);
     RUN_TEST(test_encoder_handler_button_click);
     RUN_TEST(test_power_manager_sleep_execution);
+    RUN_TEST(test_binary_matrix_click);
+    RUN_TEST(test_binary_matrix_hold_and_release);
     return UNITY_END();
 }
+

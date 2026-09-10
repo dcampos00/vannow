@@ -4,6 +4,12 @@
 volatile bool RemoteSender::_messageSent = false;
 volatile bool RemoteSender::_deliverySuccess = false;
 
+#ifdef ARDUINO_ARCH_ESP32
+RTC_DATA_ATTR uint16_t msgSequenceNumber = 0;
+#else
+static uint16_t msgSequenceNumber = 0;
+#endif
+
 RemoteSender::RemoteSender(uint8_t remoteId, const uint8_t* targetMac, uint8_t batteryPin)
     : _remoteId(remoteId), _batteryPin(batteryPin) {
     memcpy(_targetMac, targetMac, 6);
@@ -30,8 +36,9 @@ bool RemoteSender::begin() {
         return false;
     }
 
-    // Add Central as a peer
-    if (!_wireless.addPeer(_targetMac)) {
+    // Add Central as a peer with LMK encryption
+    const uint8_t ESP_NOW_LMK[16] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10};
+    if (!_wireless.addPeer(_targetMac, ESP_NOW_LMK)) {
         Serial.println("Error adding Central peer");
         return false;
     }
@@ -55,6 +62,7 @@ bool RemoteSender::send(ActionType action, uint8_t buttonIndex, int8_t rotationS
     msg.action = (uint8_t)action;
     msg.rotation_steps = rotationSteps;
     msg.battery_voltage = readBatteryVoltage();
+    msg.seq = ++msgSequenceNumber;
 
     Serial.printf("Sending payload: Remote %d | Btn %d | Act %d | Steps %d | Bat %.2fV\n",
                   msg.remote_id, msg.button_index, msg.action, msg.rotation_steps, msg.battery_voltage);

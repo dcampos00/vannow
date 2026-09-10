@@ -8,6 +8,7 @@
  */
 
 #include <Arduino.h>
+#include "BinaryMatrixHandler.h"
 #include "ButtonHandler.h"
 #include "EncoderHandler.h"
 #include "PowerManager.h"
@@ -20,9 +21,10 @@
 
 #define PANEL_TYPE_BUTTONS 1
 #define PANEL_TYPE_ENCODER 2
+#define PANEL_TYPE_MATRIX  3
 
-// Configure panel layout type here
-#define CONFIG_PANEL_TYPE PANEL_TYPE_BUTTONS
+// Configure panel layout type here (PANEL_TYPE_MATRIX allows up to 7 buttons using D0, D1, D2)
+#define CONFIG_PANEL_TYPE PANEL_TYPE_MATRIX
 
 // Central MAC address (replace with your receiver's address if different)
 uint8_t centralMacAddress[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
@@ -35,13 +37,15 @@ uint8_t centralMacAddress[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
 #if (CONFIG_PANEL_TYPE == PANEL_TYPE_ENCODER)
 EncoderHandler encoder(0, 1, 2); // Pin A = D0 (GPIO 0), Pin B = D1 (GPIO 1), Pin SW = D2 (GPIO 2)
 const uint8_t wakeupPins[] = {0, 1, 2}; // Wake up on rotation (GPIO 0/1) or button click (GPIO 2)
+#elif (CONFIG_PANEL_TYPE == PANEL_TYPE_MATRIX)
+BinaryMatrixHandler matrix(0, 1, 2); // 7-Button Diode Binary Matrix on LP-GPIO pins D0, D1, D2
+const uint8_t wakeupPins[] = {0, 1, 2}; // All 3 pins wake up from Deep Sleep via EXT1
 #else
-ButtonHandler btn0(0, 0); // D0
-ButtonHandler btn1(1, 1); // D1
-ButtonHandler btn2(2, 2); // D2
-ButtonHandler btn3(3, 3); // D3
-ButtonHandler* buttons[4] = { &btn0, &btn1, &btn2, &btn3 };
-const uint8_t wakeupPins[] = {0, 1, 2, 3}; // Wake up on any button press
+ButtonHandler btn0(0, 0); // D0 (LP-GPIO 0)
+ButtonHandler btn1(1, 1); // D1 (LP-GPIO 1)
+ButtonHandler btn2(2, 2); // D2 (LP-GPIO 2)
+ButtonHandler* buttons[3] = { &btn0, &btn1, &btn2 };
+const uint8_t wakeupPins[] = {0, 1, 2}; // Valid LP pins
 #endif
 
 const uint8_t NUM_WAKEUP_PINS = sizeof(wakeupPins) / sizeof(wakeupPins[0]);
@@ -65,8 +69,10 @@ void setup() {
     // Initialize inputs
 #if (CONFIG_PANEL_TYPE == PANEL_TYPE_ENCODER)
     encoder.begin();
+#elif (CONFIG_PANEL_TYPE == PANEL_TYPE_MATRIX)
+    matrix.begin();
 #else
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 3; i++) {
         buttons[i]->begin();
     }
 #endif
@@ -92,8 +98,15 @@ void loop() {
         powerManager.feed();
         remoteSender.send(action, 0, steps); // Encoder SW button acts as button 0
     }
+#elif (CONFIG_PANEL_TYPE == PANEL_TYPE_MATRIX)
+    uint8_t buttonIdx = 0;
+    ActionType action;
+    if (matrix.checkEvent(buttonIdx, action)) {
+        powerManager.feed();
+        remoteSender.send(action, buttonIdx, 0);
+    }
 #else
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 3; i++) {
         ActionType action;
         if (buttons[i]->checkEvent(action)) {
             powerManager.feed();

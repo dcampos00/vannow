@@ -144,8 +144,9 @@ void test_dimmable_channel_ramping_limits(void) {
     channel.begin();
     
     channel.setBrightness(98);
-    // Start hold toggles direction to -1, call again to make it 1 (up)
+    // Start hold toggles direction to -1, release and start hold again to toggle to +1 (up)
     channel.handleAction(ActionType::StartHold, 0);
+    channel.handleAction(ActionType::Release, 0);
     channel.handleAction(ActionType::StartHold, 0);
     
     // 98% -> 99%
@@ -165,8 +166,10 @@ void test_dimmable_channel_ramping_limits(void) {
     
     // Test ramping down limit (5%)
     channel.setBrightness(7);
-    // Start hold to flip direction to -1 (down)
+    // Release and start hold to set direction to -1 (down)
+    channel.handleAction(ActionType::Release, 0);
     channel.handleAction(ActionType::StartHold, 0);
+    channel.handleAction(ActionType::Release, 0);
     channel.handleAction(ActionType::StartHold, 0);
     
     // 7% -> 6%

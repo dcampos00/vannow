@@ -5,7 +5,7 @@
 
 class DimmableChannel : public Channel {
 public:
-    DimmableChannel(const char* name, uint8_t pin, uint32_t frequency = 5000, uint8_t resolution = 8);
+    DimmableChannel(const char* name, uint8_t pin, uint32_t frequency = 200, uint8_t resolution = 8);
 
     void begin() override;
     void handleAction(ActionType action, int8_t rotationSteps) override;

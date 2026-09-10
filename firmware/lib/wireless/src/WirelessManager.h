@@ -19,8 +19,8 @@ public:
     // Register sender callback (Remote)
     bool registerSendCallback(esp_now_send_cb_t callback);
 
-    // Register peer (Remote)
-    bool addPeer(const uint8_t* peerMac);
+    // Register peer with optional encryption key (LMK)
+    bool addPeer(const uint8_t* peerMac, const uint8_t* lmkKey = nullptr);
 
     // Send payload to registered peer
     bool sendPayload(const uint8_t* peerMac, const uint8_t* data, size_t len);

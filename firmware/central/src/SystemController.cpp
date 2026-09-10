@@ -68,6 +68,9 @@ void SystemController::dispatchMessage(const uint8_t* senderMac, const SwitchMes
         if (msg.button_index == 1) targetChannelIdx = 1; // Lights Zone 2
         if (msg.button_index == 2) targetChannelIdx = 4; // Water Pump
         if (msg.button_index == 3) targetChannelIdx = 9; // Inverter
+        if (msg.button_index == 4) targetChannelIdx = 2; // Lights Zone 3
+        if (msg.button_index == 5) targetChannelIdx = 3; // Lights Zone 4
+        if (msg.button_index == 6) targetChannelIdx = 8; // Ceiling Fan
     } 
     else if (msg.remote_id == 2) { // Bed Panel
         if (msg.button_index == 0) targetChannelIdx = 2; // Lights Zone 3
@@ -81,6 +84,9 @@ void SystemController::dispatchMessage(const uint8_t* senderMac, const SwitchMes
             }
             return;
         }
+        if (msg.button_index == 4) targetChannelIdx = 0; // Lights Zone 1
+        if (msg.button_index == 5) targetChannelIdx = 1; // Lights Zone 2
+        if (msg.button_index == 6) targetChannelIdx = 4; // Water Pump
     }
 
     // Forward action to target channel

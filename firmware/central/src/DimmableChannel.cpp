@@ -33,10 +33,12 @@ void DimmableChannel::handleAction(ActionType action, int8_t rotationSteps) {
             break;
 
         case ActionType::StartHold:
-            _isRamping = true;
+            // Invert ramp direction only at the start of hold, not on periodic keep-alives
+            if (!_isRamping) {
+                _isRamping = true;
+                _rampDirection = -_rampDirection;
+            }
             _lastHoldMsgTime = now;
-            // Invert ramp direction at the start of hold to toggle dim/brighten
-            _rampDirection = -_rampDirection;
             break;
 
         case ActionType::Release:
