@@ -5,9 +5,9 @@ volatile bool RemoteSender::_messageSent = false;
 volatile bool RemoteSender::_deliverySuccess = false;
 
 #ifdef ARDUINO_ARCH_ESP32
-RTC_DATA_ATTR uint16_t msgSequenceNumber = 0;
+RTC_DATA_ATTR uint32_t msgSequenceNumber = 0;
 #else
-static uint16_t msgSequenceNumber = 0;
+static uint32_t msgSequenceNumber = 0;
 #endif
 
 RemoteSender::RemoteSender(uint8_t remoteId, const uint8_t* targetMac, uint8_t batteryPin)

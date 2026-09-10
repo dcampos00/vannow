@@ -18,7 +18,7 @@ struct __attribute__((packed)) SwitchMessage {
     uint8_t action;          // ActionType cast to uint8_t
     int8_t rotation_steps;   // Encoder relative rotation step increment/decrement
     float battery_voltage;   // Voltage of remote battery for power monitoring
-    uint16_t seq;            // Sequence number for replay protection
+    uint32_t seq;            // 32-bit monotonic sequence number for anti-replay
 };
 
 #endif // PROTOCOL_H

@@ -18,3 +18,8 @@ __pycache__/
 .idea/
 *.swp
 *~
+*.kicad_prl
+
+# Large generated PCB STEP models
+hardware/central-pcb/renders/*.step
+

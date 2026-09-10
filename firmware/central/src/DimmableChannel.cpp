@@ -12,15 +12,15 @@ DimmableChannel::DimmableChannel(const char* name, uint8_t pin, uint32_t frequen
       _isRamping(false),
       _rampDirection(1),
       _lastRampTime(0),
-      _lastHoldMsgTime(0) {}
+      _lastHoldMsgTime(0),
+      _dirty(false),
+      _lastChangeTime(0) {}
 
 void DimmableChannel::begin() {
     // Arduino ESP32 Core 3.x ledcAttach automatically configures and binds a channel to the pin
     ledcAttach(_pin, _frequency, _resolution);
-    ledcWrite(_pin, 0);
-    _isActive = false;
-    _currentBrightness = 0;
-    _targetBrightness = 0;
+    uint32_t duty = (uint32_t)((_currentBrightness / 100.0) * _maxDuty);
+    ledcWrite(_pin, duty);
 }
 
 void DimmableChannel::handleAction(ActionType action, int8_t rotationSteps) {
@@ -45,6 +45,8 @@ void DimmableChannel::handleAction(ActionType action, int8_t rotationSteps) {
             if (_isRamping) {
                 _isRamping = false;
                 _lastOnBrightness = _currentBrightness > 5 ? _currentBrightness : 80;
+                _dirty = false;
+                notifyStateChanged();
             }
             break;
 
@@ -55,18 +57,33 @@ void DimmableChannel::handleAction(ActionType action, int8_t rotationSteps) {
                 if (newBright > 100) newBright = 100;
                 if (newBright < 0) newBright = 0;
                 setBrightness(newBright);
+                _dirty = true;
+                _lastChangeTime = now;
             }
             break;
     }
 }
 
 void DimmableChannel::setState(bool active) {
-    _isActive = active;
-    if (_isActive) {
-        _targetBrightness = _lastOnBrightness;
-    } else {
-        _targetBrightness = 0;
+    if (_isActive != active) {
+        _isActive = active;
+        if (_isActive) {
+            _targetBrightness = _lastOnBrightness;
+        } else {
+            _targetBrightness = 0;
+        }
+        notifyStateChanged();
     }
+}
+
+uint8_t DimmableChannel::getLastOnBrightness() const {
+    return _lastOnBrightness;
+}
+
+void DimmableChannel::setLastOnBrightness(uint8_t brightness) {
+    if (brightness > 100) brightness = 100;
+    if (brightness < 5) brightness = 5;
+    _lastOnBrightness = brightness;
 }
 
 void DimmableChannel::setBrightness(uint8_t brightness) {
@@ -84,6 +101,11 @@ void DimmableChannel::setBrightness(uint8_t brightness) {
     } else {
         _isActive = false;
     }
+
+    if (!_isRamping) {
+        _dirty = true;
+        _lastChangeTime = millis();
+    }
 }
 
 uint8_t DimmableChannel::getBrightness() const {
@@ -99,6 +121,8 @@ void DimmableChannel::update() {
         if (now - _lastHoldMsgTime > HOLD_TIMEOUT_MS) {
             _isRamping = false;
             _lastOnBrightness = _currentBrightness > 5 ? _currentBrightness : 80;
+            _dirty = false;
+            notifyStateChanged();
         } else if (now - _lastRampTime >= RAMP_INTERVAL_MS) {
             _lastRampTime = now;
             int16_t newBright = (int16_t)_currentBrightness + _rampDirection;
@@ -114,6 +138,12 @@ void DimmableChannel::update() {
             setBrightness(newBright);
         }
         return;
+    }
+
+    // Debounce settle timer for encoder rotations: persist only after input stabilizes
+    if (_dirty && (now - _lastChangeTime >= SETTLE_TIMEOUT_MS)) {
+        _dirty = false;
+        notifyStateChanged();
     }
 
     // 2. Process smooth click fade-to-target

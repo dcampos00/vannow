@@ -224,6 +224,7 @@ void test_system_controller_basics(void) {
     msg.button_index = 0;
     msg.action = (uint8_t)ActionType::Click;
     msg.battery_voltage = 3.0f;
+    msg.seq = 1; // Valid monotonic sequence
     
     controller.dispatchMessage(entryMac, msg);
     controller.update();
@@ -237,11 +238,13 @@ void test_system_controller_basics(void) {
     
     // Water pump
     msg.button_index = 2;
+    msg.seq = 2;
     controller.dispatchMessage(entryMac, msg);
     TEST_ASSERT_EQUAL(HIGH, ArduinoMock::getPinState(4));
     
     // Low battery trigger alert
     msg.button_index = 0;
+    msg.seq = 3;
     msg.battery_voltage = 1.8f;
     controller.dispatchMessage(entryMac, msg);
     
@@ -251,6 +254,7 @@ void test_system_controller_basics(void) {
     msg.button_index = 3;
     msg.action = (uint8_t)ActionType::Click;
     msg.battery_voltage = 2.9f;
+    msg.seq = 1; // Remote 2 first sequence
     
     controller.dispatchMessage(bedMac, msg);
     controller.update();
@@ -271,6 +275,149 @@ void test_system_controller_battery_adc(void) {
     TEST_ASSERT_FLOAT_WITHIN(0.1f, 10.816f, voltage);
 }
 
+void test_anti_replay_sliding_window(void) {
+    AntiReplayFilter filter;
+
+    // Reject sequence 0
+    TEST_ASSERT_FALSE(filter.validateAndAdvance(1, 0));
+
+    // First sequence accepted
+    TEST_ASSERT_TRUE(filter.validateAndAdvance(1, 10));
+    TEST_ASSERT_EQUAL(10, filter.getMaxSeq(1));
+
+    // In-order forward sequence accepted
+    TEST_ASSERT_TRUE(filter.validateAndAdvance(1, 11));
+    TEST_ASSERT_EQUAL(11, filter.getMaxSeq(1));
+
+    // Out-of-order within window accepted (seq 9 never seen)
+    TEST_ASSERT_TRUE(filter.validateAndAdvance(1, 9));
+
+    // Duplicate replay rejected (seq 11 already seen)
+    TEST_ASSERT_FALSE(filter.validateAndAdvance(1, 11));
+
+    // Duplicate replay rejected (seq 9 already seen)
+    TEST_ASSERT_FALSE(filter.validateAndAdvance(1, 9));
+
+    // Advance window significantly (jump to 100)
+    TEST_ASSERT_TRUE(filter.validateAndAdvance(1, 100));
+    TEST_ASSERT_EQUAL(100, filter.getMaxSeq(1));
+
+    // Packet at 35 is 65 steps behind max (100 - 35 = 65 >= 64): outside window, rejected
+    TEST_ASSERT_FALSE(filter.validateAndAdvance(1, 35));
+
+    // Packet at 37 is 63 steps behind max (100 - 37 = 63 < 64): inside window, accepted
+    TEST_ASSERT_TRUE(filter.validateAndAdvance(1, 37));
+
+    // Duplicate at 37 rejected
+    TEST_ASSERT_FALSE(filter.validateAndAdvance(1, 37));
+
+    // Multi-remote isolation: Remote 2 state should be completely separate
+    TEST_ASSERT_FALSE(filter.isInitialized(2));
+    TEST_ASSERT_TRUE(filter.validateAndAdvance(2, 5));
+    TEST_ASSERT_EQUAL(5, filter.getMaxSeq(2));
+
+    // Reset single remote
+    filter.resetRemote(1);
+    TEST_ASSERT_FALSE(filter.isInitialized(1));
+    TEST_ASSERT_TRUE(filter.isInitialized(2)); // Remote 2 remains intact
+}
+
+void test_water_pump_auto_off_timer(void) {
+    DigitalChannel pump("WaterPump", 4);
+    pump.begin();
+    pump.setAutoOffTimeout(600000); // 10 minutes = 600,000 ms
+
+    TEST_ASSERT_FALSE(pump.getState());
+    TEST_ASSERT_EQUAL(0, pump.getRemainingTime());
+
+    // Turn ON pump
+    pump.handleAction(ActionType::Click, 0);
+    TEST_ASSERT_TRUE(pump.getState());
+    TEST_ASSERT_EQUAL(600000, pump.getRemainingTime());
+
+    // Advance 5 minutes (300,000 ms)
+    ArduinoMock::advanceMillis(300000);
+    pump.update();
+    TEST_ASSERT_TRUE(pump.getState());
+    TEST_ASSERT_EQUAL(300000, pump.getRemainingTime());
+
+    // Advance 4 minutes and 59 seconds (299,000 ms) -> Total 599,000 ms
+    ArduinoMock::advanceMillis(299000);
+    pump.update();
+    TEST_ASSERT_TRUE(pump.getState());
+    TEST_ASSERT_EQUAL(1000, pump.getRemainingTime());
+
+    // Advance 2 seconds (2,000 ms) -> Total 601,000 ms (timeout expired)
+    ArduinoMock::advanceMillis(2000);
+    pump.update();
+    TEST_ASSERT_FALSE(pump.getState());
+    TEST_ASSERT_EQUAL(LOW, ArduinoMock::getPinState(4));
+    TEST_ASSERT_EQUAL(0, pump.getRemainingTime());
+}
+
+void test_nvs_state_persistence_and_restore(void) {
+    uint8_t mac[6] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
+
+    // Session 1: configure states and let settle
+    {
+        SystemController controller;
+        controller.begin();
+
+        // 1. Turn ON Zone 1 (channel 0) and dim to 65% via encoder
+        SwitchMessage msg = {};
+        msg.remote_id = 1;
+        msg.button_index = 0; // Zone 1
+        msg.action = (uint8_t)ActionType::Click;
+        msg.seq = 1;
+        controller.dispatchMessage(mac, msg);
+
+        // Turn ON Aux 1 (channel 5)
+        Channel* aux1 = controller.getChannel(5);
+        TEST_ASSERT_NOT_NULL(aux1);
+        aux1->setState(true);
+
+        // Turn ON Water Pump (channel 4)
+        Channel* pump = controller.getChannel(4);
+        TEST_ASSERT_NOT_NULL(pump);
+        pump->setState(true);
+
+        // Adjust Zone 1 brightness to 65% via encoder
+        DimmableChannel* zone1 = static_cast<DimmableChannel*>(controller.getChannel(0));
+        zone1->setBrightness(65);
+        zone1->handleAction(ActionType::Release, 0); // triggers immediate save
+
+        // Allow settle timer to flush
+        ArduinoMock::advanceMillis(1500);
+        controller.update();
+
+        TEST_ASSERT_TRUE(zone1->getState());
+        TEST_ASSERT_EQUAL(65, zone1->getLastOnBrightness());
+        TEST_ASSERT_TRUE(aux1->getState());
+        TEST_ASSERT_TRUE(pump->getState());
+    }
+
+    // Session 2: "Reboot" - create a fresh SystemController instance
+    {
+        SystemController freshController;
+        freshController.begin(); // loads persisted state from NVS
+
+        DimmableChannel* zone1 = static_cast<DimmableChannel*>(freshController.getChannel(0));
+        Channel* aux1 = freshController.getChannel(5);
+        Channel* pump = freshController.getChannel(4);
+
+        // Zone 1 should restore ON at 65% brightness
+        TEST_ASSERT_TRUE(zone1->getState());
+        TEST_ASSERT_EQUAL(65, zone1->getBrightness());
+        TEST_ASSERT_EQUAL(65, zone1->getLastOnBrightness());
+
+        // Aux 1 should restore ON
+        TEST_ASSERT_TRUE(aux1->getState());
+
+        // CRITICAL SAFETY CHECK: Water Pump must NOT restore ON after reboot!
+        TEST_ASSERT_FALSE(pump->getState());
+    }
+}
+
 int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(test_digital_channel_toggle);
@@ -282,5 +429,9 @@ int main(int argc, char **argv) {
     RUN_TEST(test_dimmable_channel_hold_timeout);
     RUN_TEST(test_system_controller_basics);
     RUN_TEST(test_system_controller_battery_adc);
+    RUN_TEST(test_anti_replay_sliding_window);
+    RUN_TEST(test_water_pump_auto_off_timer);
+    RUN_TEST(test_nvs_state_persistence_and_restore);
     return UNITY_END();
 }
+

@@ -12,6 +12,18 @@
 #include "WirelessManager.h"
 #include "protocol.h"
 
+#if defined(ARDUINO_ARCH_ESP32)
+#include <esp_task_wdt.h>
+#define WDT_TIMEOUT_SECONDS 10
+
+// FreeRTOS queue for thread-safe transfer from wifi_task to loopTask
+struct PacketQueueItem {
+    uint8_t senderMac[6];
+    SwitchMessage msg;
+};
+static QueueHandle_t packetQueue = nullptr;
+#endif
+
 // Instantiate the global system coordinator and wireless manager
 SystemController systemController;
 WirelessManager wirelessManager;
@@ -24,10 +36,7 @@ const uint8_t remoteMacs[][6] = {
 const uint8_t NUM_REMOTES = sizeof(remoteMacs) / sizeof(remoteMacs[0]);
 const uint8_t ESP_NOW_LMK[16] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10};
 
-// Sequence number trackers for replay protection
-uint16_t lastSeqNumbers[NUM_REMOTES] = {0};
-
-// Callback when data is received over ESP-NOW
+// Callback when data is received over ESP-NOW (executes in wifi_task context)
 void OnDataRecv(const esp_now_recv_info *recv_info, const uint8_t *incomingData, int len) {
     if (len != sizeof(SwitchMessage)) {
         Serial.printf("Error: Invalid packet size received (%d bytes, expected %d)\n", len, sizeof(SwitchMessage));
@@ -48,22 +57,19 @@ void OnDataRecv(const esp_now_recv_info *recv_info, const uint8_t *incomingData,
         return;
     }
 
+#if defined(ARDUINO_ARCH_ESP32)
+    // 2. Post packet to FreeRTOS queue to avoid data race with loopTask
+    PacketQueueItem item;
+    memcpy(item.senderMac, recv_info->src_addr, 6);
+    memcpy(&item.msg, incomingData, sizeof(SwitchMessage));
+    if (packetQueue && xQueueSend(packetQueue, &item, 0) != pdTRUE) {
+        Serial.println("[WARN] ESP-NOW packet queue full, dropped frame.");
+    }
+#else
     SwitchMessage msg;
     memcpy(&msg, incomingData, sizeof(msg));
-
-    // 2. Sequence number validation (replay protection)
-    if (msg.seq <= lastSeqNumbers[remoteIdx]) {
-        if (msg.seq == 1 && lastSeqNumbers[remoteIdx] != 1) {
-            Serial.printf("Notice: Remote %d power-cycle detected (seq reset to 1).\n", remoteIdx + 1);
-        } else {
-            Serial.printf("Rejected replay packet: received seq %d, last seq was %d\n", msg.seq, lastSeqNumbers[remoteIdx]);
-            return;
-        }
-    }
-    lastSeqNumbers[remoteIdx] = msg.seq;
-
-    // Delegate message handling to the controller using sender's MAC from recv_info
     systemController.dispatchMessage(recv_info->src_addr, msg);
+#endif
 }
 
 void setup() {
@@ -71,11 +77,30 @@ void setup() {
     delay(1000);
     Serial.println("Starting VanNOW Central Controller...");
 
-    // Initialize physical outputs and controllers
+    // Initialize physical outputs, safety timers, and restore persisted states
     systemController.begin();
 
     Serial.print("Central MAC Address: ");
     Serial.println(WiFi.macAddress());
+
+#if defined(ARDUINO_ARCH_ESP32)
+    // Create thread-safe packet queue (depth 16)
+    packetQueue = xQueueCreate(16, sizeof(PacketQueueItem));
+
+    // Initialize Task Watchdog Timer (10s timeout)
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+    esp_task_wdt_config_t twdt_config = {
+        .timeout_ms = WDT_TIMEOUT_SECONDS * 1000,
+        .idle_core_mask = 0,
+        .trigger_panic = true,
+    };
+    esp_task_wdt_init(&twdt_config);
+#else
+    esp_task_wdt_init(WDT_TIMEOUT_SECONDS, true);
+#endif
+    esp_task_wdt_add(NULL); // Subscribe current loopTask
+    Serial.printf("Task Watchdog Timer configured with %d second timeout.\n", WDT_TIMEOUT_SECONDS);
+#endif
 
     // Initialize Wi-Fi and ESP-NOW via WirelessManager
     if (!wirelessManager.begin()) {
@@ -102,7 +127,18 @@ void setup() {
 }
 
 void loop() {
-    // Process channel transitions, dimming ramps, and timeouts
+#if defined(ARDUINO_ARCH_ESP32)
+    // Pet Task Watchdog Timer
+    esp_task_wdt_reset();
+
+    // Process queued ESP-NOW packets safely in loopTask context
+    PacketQueueItem item;
+    while (packetQueue && xQueueReceive(packetQueue, &item, 0) == pdTRUE) {
+        systemController.dispatchMessage(item.senderMac, item.msg);
+    }
+#endif
+
+    // Process channel transitions, dimming ramps, auto-off timers, and debounce
     systemController.update();
 
     // Heartbeat reporting to confirm operational status

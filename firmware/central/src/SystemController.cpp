@@ -27,24 +27,123 @@ SystemController::~SystemController() {
 }
 
 void SystemController::begin() {
-    // Initialize each individual channel
+    // 1. Initialize physical channels
     for (int i = 0; i < NUM_CHANNELS; i++) {
         _channels[i]->begin();
         Serial.printf("Configured channel: %s (Pin %d)\n", _channels[i]->getName(), _channels[i]->getPin());
     }
 
-    // Configure battery ADC attenuation for 11dB (0-3.3V range)
+    // 2. Configure safety timers and restore policies
+    // Channel 4 is Water Pump: set 10-minute auto-off safety timeout
+    static_cast<DigitalChannel*>(_channels[4])->setAutoOffTimeout(10 * 60 * 1000); // 600,000 ms = 10 minutes
+    // Water pump must NOT automatically restore ON across reboots/brownouts for flood prevention
+    _channels[4]->setRestoreOnBoot(false);
+
+    // 3. Restore persisted channel states from NVS before attaching runtime change callbacks
+    loadPersistedStates();
+
+    // 4. Register state change callbacks for persistence
+    for (int i = 0; i < NUM_CHANNELS; i++) {
+        _channels[i]->setChangeCallback(onChannelChanged, i, this);
+    }
+
+    // 5. Configure battery ADC attenuation for 11dB (0-3.3V range)
     analogSetPinAttenuation(BATTERY_ADC_PIN, ADC_11db);
 }
 
 void SystemController::update() {
-    // Call update on all channels to process dimming/fading
+    // Polymorphically update all channels (transitions, safety timeouts, debounce)
     for (int i = 0; i < NUM_CHANNELS; i++) {
-        // Only dimmable channels need active loops
-        if (_channels[i]->isDimmable()) {
-            static_cast<DimmableChannel*>(_channels[i])->update();
+        _channels[i]->update();
+    }
+}
+
+void SystemController::onChannelChanged(uint8_t channelIndex, void* context) {
+    SystemController* self = static_cast<SystemController*>(context);
+    if (self) {
+        self->saveChannelState(channelIndex);
+    }
+}
+
+void SystemController::saveChannelState(uint8_t channelIndex) {
+    if (channelIndex >= NUM_CHANNELS) return;
+
+    Preferences prefs;
+    if (!prefs.begin("vannow_state", false)) {
+        Serial.println("[NVS] Error opening NVS namespace 'vannow_state' for writing.");
+        return;
+    }
+
+    char keyState[16];
+    snprintf(keyState, sizeof(keyState), "ch%u_state", channelIndex);
+    bool currState = _channels[channelIndex]->getState();
+
+    // Prevent redundant flash writes
+    if (!prefs.isKey(keyState) || prefs.getBool(keyState, !currState) != currState) {
+        prefs.putBool(keyState, currState);
+    }
+
+    if (_channels[channelIndex]->isDimmable()) {
+        DimmableChannel* dim = static_cast<DimmableChannel*>(_channels[channelIndex]);
+        char keyBri[16];
+        snprintf(keyBri, sizeof(keyBri), "ch%u_bri", channelIndex);
+        uint8_t currBri = dim->getLastOnBrightness();
+        if (!prefs.isKey(keyBri) || prefs.getUChar(keyBri, 0) != currBri) {
+            prefs.putUChar(keyBri, currBri);
         }
     }
+
+    prefs.end();
+}
+
+void SystemController::loadPersistedStates() {
+    Preferences prefs;
+    if (!prefs.begin("vannow_state", true)) {
+        Serial.println("[NVS] No previous persisted state found or unable to read NVS.");
+        return;
+    }
+
+    for (uint8_t i = 0; i < NUM_CHANNELS; i++) {
+        char keyState[16];
+        snprintf(keyState, sizeof(keyState), "ch%u_state", i);
+
+        bool hasState = prefs.isKey(keyState);
+        bool savedState = hasState ? prefs.getBool(keyState, false) : false;
+
+        if (_channels[i]->isDimmable()) {
+            DimmableChannel* dim = static_cast<DimmableChannel*>(_channels[i]);
+            char keyBri[16];
+            snprintf(keyBri, sizeof(keyBri), "ch%u_bri", i);
+            uint8_t savedBri = prefs.getUChar(keyBri, 80);
+            if (savedBri > 0) {
+                dim->setLastOnBrightness(savedBri);
+            }
+            if (savedState && _channels[i]->shouldRestoreOnBoot()) {
+                dim->setBrightness(savedBri);
+                Serial.printf("[NVS] Restored dimmable channel %d (%s) ON at %u%%\n",
+                              i, _channels[i]->getName(), savedBri);
+            }
+        } else {
+            if (savedState && _channels[i]->shouldRestoreOnBoot()) {
+                _channels[i]->setState(true);
+                Serial.printf("[NVS] Restored digital channel %d (%s) ON\n",
+                              i, _channels[i]->getName());
+            }
+        }
+    }
+
+    prefs.end();
+}
+
+AntiReplayFilter& SystemController::getAntiReplayFilter() {
+    return _antiReplay;
+}
+
+Channel* SystemController::getChannel(uint8_t index) const {
+    if (index < NUM_CHANNELS) {
+        return _channels[index];
+    }
+    return nullptr;
 }
 
 void SystemController::dispatchMessage(const uint8_t* senderMac, const SwitchMessage& msg) {
@@ -53,8 +152,16 @@ void SystemController::dispatchMessage(const uint8_t* senderMac, const SwitchMes
              senderMac[0], senderMac[1], senderMac[2], senderMac[3], senderMac[4], senderMac[5]);
 
     Serial.printf("\n--- Message from [%s] ---\n", macStr);
-    Serial.printf("Remote ID: %d | Button: %d | Action: %d\n", msg.remote_id, msg.button_index, msg.action);
+    Serial.printf("Remote ID: %d | Button: %d | Action: %d | Seq: %u\n",
+                  msg.remote_id, msg.button_index, msg.action, msg.seq);
     Serial.printf("Remote Battery: %.2f V\n", msg.battery_voltage);
+
+    // RFC 6479 Anti-Replay validation
+    if (!_antiReplay.validateAndAdvance(msg.remote_id, msg.seq)) {
+        Serial.printf("[SECURITY] Rejected replay packet from Remote %d (seq: %u, last_max: %u)\n",
+                      msg.remote_id, msg.seq, _antiReplay.getMaxSeq(msg.remote_id));
+        return;
+    }
 
     if (msg.battery_voltage < 2.2f && (msg.battery_voltage > 0.5f || msg.battery_voltage == 0.0f)) {
         Serial.printf("[ALERT] Critical battery on Panel %d. Replace AA batteries.\n", msg.remote_id);

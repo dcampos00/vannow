@@ -64,6 +64,8 @@ void delay(uint32_t ms) {
     mockMillis += ms;
 }
 
+#include "Preferences.h"
+
 namespace ArduinoMock {
     void reset() {
         mockMillis = 0;
@@ -72,6 +74,7 @@ namespace ArduinoMock {
         memset(mockPinStates, HIGH, sizeof(mockPinStates));
         memset(mockAnalogValues, 0, sizeof(mockAnalogValues));
         memset(mockLEDCValues, 0, sizeof(mockLEDCValues));
+        Preferences::resetMockStorage();
     }
     
     void setMillis(uint32_t ms) {

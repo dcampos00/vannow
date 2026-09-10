@@ -16,18 +16,20 @@ El sistema VanNOW hoy tiene:
 - ✅ Mapeo de paneles a canales en [`SystemController`](../firmware/central/src/SystemController.cpp)
 - ✅ Tests unitarios nativos para channels y handlers
 - ✅ Diseño PCB en Atopile ([`central.ato`](../hardware/central-pcb/central.ato))
-- ⬜ Sin persistencia de estado (se pierde al reiniciar)
+- ✅ Persistencia de estado en NVS (restauración tras reinicio con protección contra desgaste de flash)
+- ✅ Anti-replay con ventana deslizante RFC 6479 (64 paquetes) en ESP-NOW
+- ✅ Task Watchdog Timer (WDT) de 10s en central con autorecuperación
+- ✅ Timer de seguridad auto-off para bomba de agua (10 min) con política segura de boot
 - ⬜ Sin feedback visual al usuario en los remotos
 - ⬜ Sin interfaz de diagnóstico/configuración
-- ⬜ Sin protección contra replay en ESP-NOW
 
 ---
 
-## 🔴 Tier 1 — Impacto Crítico (Seguridad y Fiabilidad)
+## 🔴 Tier 1 — Impacto Crítico (Seguridad y Fiabilidad) [COMPLETADO ✅]
 
 > Funcionalidades que previenen pérdida de datos, daño al hardware o situaciones peligrosas. **Implementar antes del primer viaje.**
 
-### 1.1. Persistencia de Estado en NVS (Non-Volatile Storage)
+### 1.1. Persistencia de Estado en NVS (Non-Volatile Storage) ✅
 
 | Aspecto                | Detalle                                                                                                                                                                                                          |
 | :--------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -39,7 +41,7 @@ El sistema VanNOW hoy tiene:
 
 ---
 
-### 1.2. Watchdog Timer (WDT) en la Central
+### 1.2. Watchdog Timer (WDT) en la Central ✅
 
 | Aspecto                | Detalle                                                                                                                                |
 | :--------------------- | :------------------------------------------------------------------------------------------------------------------------------------- |
@@ -51,7 +53,7 @@ El sistema VanNOW hoy tiene:
 
 ---
 
-### 1.3. Autenticación de Mensajes ESP-NOW (Anti-Replay)
+### 1.3. Autenticación de Mensajes ESP-NOW (Anti-Replay) ✅
 
 | Aspecto                | Detalle                                                                                                                                                                                                                                                              |
 | :--------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -63,7 +65,7 @@ El sistema VanNOW hoy tiene:
 
 ---
 
-### 1.4. Protección contra Inundación de Bomba de Agua (Auto-Off Timer)
+### 1.4. Protección contra Inundación de Bomba de Agua (Auto-Off Timer) ✅
 
 | Aspecto                | Detalle                                                                                                                                                                             |
 | :--------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

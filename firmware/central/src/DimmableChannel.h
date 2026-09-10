@@ -12,11 +12,15 @@ public:
     void setState(bool active) override;
 
     // Must be called in loop to update smooth fade transition and holds
-    void update();
+    void update() override;
 
     // Sets target and current brightness directly (0 to 100)
     void setBrightness(uint8_t brightness);
     uint8_t getBrightness() const;
+
+    // Stored brightness memory for toggle ON
+    uint8_t getLastOnBrightness() const;
+    void setLastOnBrightness(uint8_t brightness);
 
     bool isDimmable() const override { return true; }
 
@@ -34,9 +38,13 @@ private:
     uint32_t _lastRampTime;
     uint32_t _lastHoldMsgTime;
 
-    static constexpr uint32_t RAMP_INTERVAL_MS = 30; // Milliseconds per brightness step in hold mode
-    static constexpr uint32_t FADE_INTERVAL_MS = 5;  // Milliseconds per brightness step in click mode
-    static constexpr uint32_t HOLD_TIMEOUT_MS = 300; // Timeout to auto-release hold if packages stop
+    bool _dirty;
+    uint32_t _lastChangeTime;
+
+    static constexpr uint32_t RAMP_INTERVAL_MS = 30;   // Milliseconds per brightness step in hold mode
+    static constexpr uint32_t FADE_INTERVAL_MS = 5;    // Milliseconds per brightness step in click mode
+    static constexpr uint32_t HOLD_TIMEOUT_MS = 300;   // Timeout to auto-release hold if packages stop
+    static constexpr uint32_t SETTLE_TIMEOUT_MS = 1000; // Settle time before persisting encoder adjustments
 };
 
 #endif // DIMMABLE_CHANNEL_H
