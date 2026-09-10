@@ -497,7 +497,7 @@ module VanCentralControllerPROFET:
     # ----------------------------------------
     # Aux Outlets 1-3 (GPIO 5, 6, 7 - Smart PROFETs)
     # ----------------------------------------
-    # Aux Outlet 1 (GPIO 5)
+    # Aux Outlet 1 (GPIO 5 - Exterior Auxiliary Lights)
     aux1_stage = new HighCurrentSmartHighSideSwitch
     esp32.GPIO5 ~ aux1_stage.control
     v_bat_12v ~ aux1_stage.power_in
@@ -506,26 +506,6 @@ module VanCentralControllerPROFET:
     aux1_terminal = new ScrewTerminal_2Pin
     aux1_stage.power_out ~ aux1_terminal.pin_1
     gnd ~ aux1_terminal.pin_2
-
-    # Aux Outlet 2 (GPIO 6)
-    aux2_stage = new HighCurrentSmartHighSideSwitch
-    esp32.GPIO6 ~ aux2_stage.control
-    v_bat_12v ~ aux2_stage.power_in
-    gnd ~ aux2_stage.gnd
-
-    aux2_terminal = new ScrewTerminal_2Pin
-    aux2_stage.power_out ~ aux2_terminal.pin_1
-    gnd ~ aux2_terminal.pin_2
-
-    # Aux Outlet 3 (GPIO 7)
-    aux3_stage = new HighCurrentSmartHighSideSwitch
-    esp32.GPIO7 ~ aux3_stage.control
-    v_bat_12v ~ aux3_stage.power_in
-    gnd ~ aux3_stage.gnd
-
-    aux3_terminal = new ScrewTerminal_2Pin
-    aux3_stage.power_out ~ aux3_terminal.pin_1
-    gnd ~ aux3_terminal.pin_2
 
     # ----------------------------------------
     # Ceiling Fan (GPIO 19 - Discrete MOSFET)

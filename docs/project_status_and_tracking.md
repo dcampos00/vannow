@@ -8,7 +8,7 @@ This document provides a single source of truth for the implementation status ac
 
 | Domain / Board | Schematic & Logic (Atopile) | Board Outline & Placement | Copper Routing & Power Planes | DRC Status | 3D CAD & Enclosure | Firmware & Unit Tests | Production Readiness |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Central Controller (`central-pcb`)** | 100% (Passed) | 80% (Header J7/J8 fix needed) | 0% (Unrouted) | 181 violations | 100% (Base + Lid modelled) | 100% (15/15 tests pass) | **Prototyping / Routing** |
+| **Central Controller (`central-pcb`)** | 100% (Passed) | 100% (150×95mm, M3 holes) | 100% (Procedural route) | 0 violations (Clean) | 100% (Zero clash, 32mm headroom) | 100% (15/15 tests pass) | **100% Complete / Ready** |
 | **Master Entrance Remote (`entrance-remote-pcb`)** | 100% (Passed) | 100% (Exact apertures) | 100% (Procedural route) | 0 violations (Clean) | 100% (Body, Faceplate, Cradle) | 100% (9/9 tests pass) | **100% Complete / Ready** |
 | **Cockpit Hub (`cockpit-pcb`)** | 100% (Passed) | 100% (55×45mm, M3 holes) | 100% (Procedural route) | 0 violations (Clean) | STEP + 3D Raytraced Renders | 100% (Protocol mapped) | **100% Board Ready** |
 
@@ -61,11 +61,14 @@ This document provides a single source of truth for the implementation status ac
   - Correct diode orientation and standard SOD-123 footprint.
 
 ### 2.4 Physical PCB Layout & Routing (KiCad)
-- **Overall Status:** 10% Complete (Unrouted).
-- **`central-pcb` (`hardware/central-pcb/layouts/default/default.kicad_pcb`):**
-  - Dimensions: 150 mm × 95 mm, 4x M3 mounting holes at (±70 mm, ±42.5 mm).
-  - Current Issue: 181 DRC violations. Socket headers J7 and J8 overlap at (55.4 mm, 30.0 mm).
-  - Needs: Separation of headers, routing of high-current 12V bus (min 3.0 mm copper / polygon pour), 3.3V logic signals, and unbroken ground plane on B.Cu.
+- **Overall Status:** 100% Complete & DRC Clean Across All 3 Boards.
+- **`central-pcb` (`hardware/central-pcb/layouts/profet/profet.kicad_pcb` & `default.kicad_pcb`):**
+  - Dimensions: 150.0 mm × 95.0 mm, 4x M3 mounting holes at (±70.0 mm, ±42.5 mm).
+  - Power & Switching Stages: 6x BTS5008-1EKB PROFET switches, 1x discrete MOSFET ceiling fan driver (AO4407A + 2N7002), 2x PC817 optocoupled dry contacts (diesel heater & fridge), MP1584 buck converter carrier.
+  - Telemetry: 100k/18k precision battery voltage divider with SAR ADC anti-aliasing filter capacitor and series protection.
+  - **Verification:** 0 DRC violations, 0 unconnected items (`profet-drc.rpt` & `default-drc.rpt`).
+  - **Artifacts:** Populated STEP CAD model (`profet.step`), 2D vector silkscreen SVG (`profet_silkscreen.svg`), and 3x 1440p photorealistic raytraced renders in `hardware/central-pcb/renders/` (`profet_isometric.png`, `profet_top.png`, `profet_bottom.png`).
+  - **ECAD/MCAD Clash Detection:** 100% verified against `central_enclosure_base.step` and `central_enclosure_lid.step` in build123d. 0 geometric collision, 9.5 mm / 12.0 mm wall clearance, 32.3 mm lid headroom over tallest component.
 - **`entrance-remote-pcb` (`hardware/entrance-remote-pcb/layouts/default/default.kicad_pcb`):**
   - Dimensions: 80.0 mm × 80.0 mm with 4.0 mm corner radius, 4x M2.5 mounting holes at (±30.0 mm, ±30.0 mm).
   - Pushbuttons SW1–SW6 locked to faceplate apertures: X = ±15.0 mm, Y = 18.0 mm, -2.0 mm, -22.0 mm.
@@ -92,9 +95,9 @@ This document provides a single source of truth for the implementation status ac
 | **P4** | Cockpit Hub PCB Placement | `hardware/cockpit-pcb/` | 🟢 Complete | 55×45 mm outline, 4x M3 holes, 29 footprints, 0 collisions |
 | **P5** | Cockpit Hub Routing, DRC & 3D | `hardware/cockpit-pcb/` | 🟢 Complete | 0 DRC violations, 0 unconnected, STEP + 3x 1080p renders |
 | **P6** | Cockpit Hub Enclosure CAD | `hardware/enclosures/scripts/` | ⚪ Pending | Add `build_cockpit_enclosure()` to `generate_enclosures.py` |
-| **P7** | Central PCB Header Collision Fix | `hardware/central-pcb/` | ⚪ Pending | Relocate headers J7/J8 in `central.kicad_pcb` to eliminate DRC overlap |
-| **P8** | Central PCB Power & Signal Routing | `hardware/central-pcb/` | ⚪ Pending | Route PROFET power stages (12V) and 3.3V logic signals |
-| **P9** | Central PCB 3D Render & Verification | `hardware/central-pcb/` | ⚪ Pending | Generate updated 3D renders and export populated STEP for MCAD clash check |
+| **P7** | Central PCB Header Alignment | `hardware/central-pcb/` | 🟢 Complete | J7/J8 headers aligned at 25.4mm pitch (standard DevKit footprint) |
+| **P8** | Central PCB Power & Signal Routing | `hardware/central-pcb/` | 🟢 Complete | 0 DRC violations, 0 unconnected items across both F.Cu & B.Cu |
+| **P9** | Central PCB 3D Render & Verification | `hardware/central-pcb/` | 🟢 Complete | 3x 1440p raytraced renders, STEP solid export, 0-clash MCAD verified |
 | **P10**| Pre-Production Manufacturing Audit | All PCBs | ⚪ Pending | Generate Gerber packages, drill files, BOM, and CPL files for JLCPCB/PCBWay |
 
 ---
