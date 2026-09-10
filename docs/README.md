@@ -34,6 +34,7 @@ Welcome to the **VanNOW** (Wireless Camper Van Relay System) engineering knowled
 ### 3. Hardware, PCB & Mechanical Engineering
 | Document | Language | Status | Summary |
 | :--- | :---: | :---: | :--- |
+| [**remote_pcbs_architecture.md**](remote_pcbs_architecture.md) | EN | Active (Spec) | Architectural specification, UX evaluation & Diode-OR wakeup schematics for Cockpit Hub and Master Entrance Remote. |
 | [**mechanical_and_enclosure_specs.md**](mechanical_and_enclosure_specs.md) | EN | Active (Master) | Enclosure dimensions, DIN-rail mounting, 50 mm wiring clearances, magnetic dockable remote (10.5N retention), PETG/ASA printing specs. |
 | [**evaluacion_hardware.md**](evaluacion_hardware.md) | ES | Decision | Hardware selection: Lonely Binary ESP32-S3 N16R8 for Central, XIAO ESP32-C6 for Remotes, PCA9685 vs direct GPIOs. |
 | [**opciones_encoders_bajo_perfil.md**](opciones_encoders_bajo_perfil.md) | ES | Component | Low-profile (5 mm) encoder selection: Panasonic EVQ-WGD thumbwheel, Alps EC12E SMD, and Alps EC10E hollow-shaft. |
