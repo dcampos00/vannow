@@ -101,7 +101,7 @@
 			(outputdirectory "")
 		)
 	)
-	(net 1 "2")
+	(net 1 "esp32.right_header-2")
 	(net 2 "anode")
 	(net 3 "1-2")
 	(net 6 "12")
@@ -113,11 +113,9 @@
 	(net 12 "3")
 	(net 13 "esp32.left_header-2")
 	(net 14 "4")
-	(net 15 "21")
 	(net 16 "esp32.left_header-3")
 	(net 17 "2-4")
 	(net 18 "1-1")
-	(net 19 "v_mcu_5v")
 	(net 20 "10")
 	(net 21 "11")
 	(net 22 "esp32.right_header-12")
@@ -126,19 +124,16 @@
 	(net 25 "esp32.right_header-15")
 	(net 26 "esp32.right_header-16")
 	(net 27 "esp32.right_header-17")
-	(net 28 "18")
-	(net 29 "2-2")
-	(net 30 "GPIO20")
+	(net 29 "19")
+	(net 30 "20")
 	(net 31 "esp32.right_header-3")
-	(net 32 "esp32.right_header-4")
-	(net 33 "1")
+	(net 33 "6")
 	(net 34 "7")
 	(net 35 "8")
 	(net 36 "9")
 	(net 37 "2-1")
 	(net 38 "5")
 	(net 39 "2-3")
-	(net 40 "GPIO19")
 	(net 41 "4-1")
 	(net 42 "5-1")
 	(net 43 "opto_card_ctrl-4")
@@ -146,9 +141,13 @@
 	(net 45 "v_bat_12v")
 	(net 46 "anode-2")
 	(net 49 "3-1")
-	(net 4 "v_out")
 	(net 5 "3-2")
 	(net 50 "voltage_sensor-1")
+	(net 47 "v_mcu_5v")
+	(net 48 "2-2")
+	(net 51 "2")
+	(net 52 "1")
+	(net 53 "v_out")
 	(footprint "central-pcb:TerminalBlock_Phoenix_MPT-0,5-2-2.54_1x02_P2.54mm_Horizontal"
 		(layer "F.Cu")
 		(uuid "0e7a92be-64c0-47c4-a733-b68e4642524b")
@@ -475,7 +474,7 @@
 			(drill 1.1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 1 "2")
+			(net 51 "2")
 		)
 		(embedded_fonts no)
 		(model "${KICAD10_3DMODEL_DIR}/TerminalBlock_Phoenix.3dshapes/TerminalBlock_Phoenix_MPT-0,5-2-2.54_1x02_P2.54mm_Horizontal.step"
@@ -708,7 +707,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 1 "2")
+			(net 51 "2")
 		)
 		(embedded_fonts no)
 		(model "${KICAD10_3DMODEL_DIR}/Connector_PinSocket_2.54mm.3dshapes/PinSocket_1x02_P2.54mm_Vertical.step"
@@ -933,7 +932,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 19 "v_mcu_5v")
+			(net 47 "v_mcu_5v")
 		)
 		(pad "2" thru_hole circle
 			(at 0 2.54)
@@ -941,7 +940,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 1 "2")
+			(net 51 "2")
 		)
 		(embedded_fonts no)
 		(model "${KICAD10_3DMODEL_DIR}/Connector_PinSocket_2.54mm.3dshapes/PinSocket_1x02_P2.54mm_Vertical.step"
@@ -1326,7 +1325,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 15 "21")
+			(net 47 "v_mcu_5v")
 		)
 		(pad "22" thru_hole circle
 			(at 0 53.34 90)
@@ -1334,7 +1333,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 1 "2")
+			(net 51 "2")
 		)
 		(embedded_fonts no)
 		(model "${KICAD10_3DMODEL_DIR}/Connector_PinSocket_2.54mm.3dshapes/PinSocket_1x22_P2.54mm_Vertical.step"
@@ -1559,7 +1558,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 19 "v_mcu_5v")
+			(net 51 "2")
 		)
 		(pad "2" thru_hole circle
 			(at 0 2.54 90)
@@ -1567,7 +1566,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 1 "2")
+			(net 1 "esp32.right_header-2")
 		)
 		(pad "3" thru_hole circle
 			(at 0 5.08 90)
@@ -1583,7 +1582,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 32 "esp32.right_header-4")
+			(net 53 "v_out")
 		)
 		(pad "5" thru_hole circle
 			(at 0 10.16 90)
@@ -1591,7 +1590,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 4 "v_out")
+			(net 52 "1")
 		)
 		(pad "6" thru_hole circle
 			(at 0 12.7 90)
@@ -1599,7 +1598,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 33 "1")
+			(net 33 "6")
 		)
 		(pad "7" thru_hole circle
 			(at 0 15.24 90)
@@ -1695,7 +1694,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 28 "18")
+			(net 48 "2-2")
 		)
 		(pad "19" thru_hole circle
 			(at 0 45.72 90)
@@ -1703,7 +1702,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 29 "2-2")
+			(net 29 "19")
 		)
 		(pad "20" thru_hole circle
 			(at 0 48.26 90)
@@ -1711,7 +1710,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 30 "GPIO20")
+			(net 30 "20")
 		)
 		(pad "21" thru_hole circle
 			(at 0 50.8 90)
@@ -1719,7 +1718,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 40 "GPIO19")
+			(net 51 "2")
 		)
 		(pad "22" thru_hole circle
 			(at 0 53.34 90)
@@ -1727,7 +1726,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 1 "2")
+			(net 51 "2")
 		)
 		(embedded_fonts no)
 		(model "${KICAD10_3DMODEL_DIR}/Connector_PinSocket_2.54mm.3dshapes/PinSocket_1x22_P2.54mm_Vertical.step"
@@ -1952,7 +1951,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 1 "2")
+			(net 51 "2")
 		)
 		(pad "2" thru_hole circle
 			(at 0 2.54)
@@ -2209,7 +2208,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 1 "2")
+			(net 51 "2")
 		)
 		(pad "2" thru_hole circle
 			(at 0 2.54)
@@ -2466,7 +2465,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 1 "2")
+			(net 51 "2")
 		)
 		(pad "2" thru_hole circle
 			(at 0 2.54)
@@ -2699,7 +2698,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 1 "2")
+			(net 51 "2")
 		)
 		(pad "2" thru_hole circle
 			(at 0 2.54)
@@ -2707,7 +2706,7 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 29 "2-2")
+			(net 48 "2-2")
 		)
 		(pad "3" thru_hole circle
 			(at 0 5.08)
@@ -3002,7 +3001,7 @@
 			(at 0.9125 0 90)
 			(size 1.025 1.4)
 			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 1 "2")
+			(net 51 "2")
 			(roundrect_rratio 0.243902)
 		)
 		(embedded_fonts no)
@@ -3142,7 +3141,7 @@
 			(at 0.95 0 90)
 			(size 1 1.45)
 			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 1 "2")
+			(net 51 "2")
 			(roundrect_rratio 0.25)
 		)
 		(embedded_fonts no)
@@ -3320,7 +3319,7 @@
 			(at 0.9375 0)
 			(size 0.975 1.4)
 			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 1 "2")
+			(net 51 "2")
 			(roundrect_rratio 0.25)
 		)
 		(embedded_fonts no)
@@ -3638,7 +3637,7 @@
 			(at 0.9375 0)
 			(size 0.975 1.4)
 			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 1 "2")
+			(net 51 "2")
 			(roundrect_rratio 0.25)
 		)
 		(embedded_fonts no)
@@ -3771,7 +3770,7 @@
 			(at -0.9125 0)
 			(size 1.025 1.4)
 			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 33 "1")
+			(net 52 "1")
 			(roundrect_rratio 0.243902)
 		)
 		(pad "2" smd roundrect
@@ -3956,7 +3955,7 @@
 			(at 0.9375 0)
 			(size 0.975 1.4)
 			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 1 "2")
+			(net 51 "2")
 			(roundrect_rratio 0.25)
 		)
 		(embedded_fonts no)
@@ -4236,342 +4235,11 @@
 			(at 0.9125 0)
 			(size 1.025 1.4)
 			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 4 "v_out")
+			(net 53 "v_out")
 			(roundrect_rratio 0.243902)
 		)
 		(embedded_fonts no)
 		(model "${KICAD10_3DMODEL_DIR}/Resistor_SMD.3dshapes/R_0805_2012Metric.step"
-			(offset
-				(xyz 0 0 0)
-			)
-			(scale
-				(xyz 1 1 1)
-			)
-			(rotate
-				(xyz 0 0 0)
-			)
-		)
-	)
-	(footprint "central-pcb:SOT-23"
-		(layer "F.Cu")
-		(uuid "8684e08f-e82b-462e-85f2-5f714642524b")
-		(at 10 0 0)
-		(descr "SOT, 3 Pin (JEDEC TO-236 Var AB https://www.jedec.org/document_search?search_api_views_fulltext=TO-236)")
-		(tags "SOT TO_SOT_SMD")
-		(property "Reference" "D4"
-			(at -0.86 0 0)
-			(layer "F.SilkS")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-				(justify right)
-			)
-		)
-		(property "Value" ""
-			(at 0 2.4 0)
-			(layer "F.Fab")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "KiLib_Generator" "package/gullwing"
-			(at 0 0 0)
-			(layer "F.SilkS")
-			(hide yes)
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "LCSC" "C2168"
-			(at 0 0 0)
-			(layer "User.9")
-			(hide yes)
-			(uuid "6b231d52-84a3-41c8-a160-fb304642524b")
-		)
-		(property "Manufacturer" "Nexperia"
-			(at 0 0 0)
-			(layer "User.9")
-			(hide yes)
-			(uuid "8b6a8e54-7dca-4712-86f5-7e244642524b")
-		)
-		(property "Partnumber" "BZX84-C3V3"
-			(at 0 0 0)
-			(layer "User.9")
-			(hide yes)
-			(uuid "1d29b24d-d93f-4afa-9020-3bce4642524b")
-		)
-		(property "atopile_address" "voltage_sensor.zener"
-			(at 0 0 0)
-			(layer "User.9")
-			(hide yes)
-			(uuid "57ca3fe7-6459-4220-bee9-883c4642524b")
-		)
-		(property "lcsc_id" "C2168"
-			(at 0 0 0)
-			(layer "User.9")
-			(hide yes)
-			(uuid "b9a3c662-d269-4814-8b04-bf264642524b")
-		)
-		(attr smd)
-		(fp_line
-			(start -0.76 -1.56)
-			(end 0.76 -1.56)
-			(stroke
-				(width 0.12)
-				(type solid)
-			)
-			(layer "F.SilkS")
-		)
-		(fp_line
-			(start -0.76 -1.51)
-			(end -0.76 -1.56)
-			(stroke
-				(width 0.12)
-				(type solid)
-			)
-			(layer "F.SilkS")
-		)
-		(fp_line
-			(start -0.76 0.39)
-			(end -0.76 -0.39)
-			(stroke
-				(width 0.12)
-				(type solid)
-			)
-			(layer "F.SilkS")
-		)
-		(fp_line
-			(start -0.76 1.56)
-			(end -0.76 1.51)
-			(stroke
-				(width 0.12)
-				(type solid)
-			)
-			(layer "F.SilkS")
-		)
-		(fp_line
-			(start 0.76 -1.56)
-			(end 0.76 -0.56)
-			(stroke
-				(width 0.12)
-				(type solid)
-			)
-			(layer "F.SilkS")
-		)
-		(fp_line
-			(start 0.76 0.56)
-			(end 0.76 1.56)
-			(stroke
-				(width 0.12)
-				(type solid)
-			)
-			(layer "F.SilkS")
-		)
-		(fp_line
-			(start 0.76 1.56)
-			(end -0.76 1.56)
-			(stroke
-				(width 0.12)
-				(type solid)
-			)
-			(layer "F.SilkS")
-		)
-		(fp_line
-			(start -1.93 -1.5)
-			(end -0.9 -1.5)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(layer "F.CrtYd")
-		)
-		(fp_line
-			(start -1.93 -0.39)
-			(end -1.93 -1.5)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(layer "F.CrtYd")
-		)
-		(fp_line
-			(start -1.93 0.39)
-			(end -0.9 0.39)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(layer "F.CrtYd")
-		)
-		(fp_line
-			(start -1.93 1.5)
-			(end -1.93 0.39)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(layer "F.CrtYd")
-		)
-		(fp_line
-			(start -0.9 -1.7)
-			(end 0.9 -1.7)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(layer "F.CrtYd")
-		)
-		(fp_line
-			(start -0.9 -1.5)
-			(end -0.9 -1.7)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(layer "F.CrtYd")
-		)
-		(fp_line
-			(start -0.9 -0.39)
-			(end -1.93 -0.39)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(layer "F.CrtYd")
-		)
-		(fp_line
-			(start -0.9 0.39)
-			(end -0.9 -0.39)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(layer "F.CrtYd")
-		)
-		(fp_line
-			(start -0.9 1.5)
-			(end -1.93 1.5)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(layer "F.CrtYd")
-		)
-		(fp_line
-			(start -0.9 1.7)
-			(end -0.9 1.5)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(layer "F.CrtYd")
-		)
-		(fp_line
-			(start 0.9 -1.7)
-			(end 0.9 -0.55)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(layer "F.CrtYd")
-		)
-		(fp_line
-			(start 0.9 -0.55)
-			(end 1.93 -0.55)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(layer "F.CrtYd")
-		)
-		(fp_line
-			(start 0.9 0.55)
-			(end 0.9 1.7)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(layer "F.CrtYd")
-		)
-		(fp_line
-			(start 0.9 1.7)
-			(end -0.9 1.7)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(layer "F.CrtYd")
-		)
-		(fp_line
-			(start 1.93 -0.55)
-			(end 1.93 0.55)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(layer "F.CrtYd")
-		)
-		(fp_line
-			(start 1.93 0.55)
-			(end 0.9 0.55)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(layer "F.CrtYd")
-		)
-		(fp_poly
-			(pts
-				(xy -1.3 -0.38) (xy -1.06 -0.05) (xy -1.54 -0.05)
-			)
-			(stroke
-				(width 0.12)
-				(type solid)
-			)
-			(fill yes)
-			(layer "F.SilkS")
-		)
-		(fp_poly
-			(pts
-				(xy -0.325 -1.45) (xy 0.65 -1.45) (xy 0.65 1.45) (xy -0.65 1.45) (xy -0.65 -1.125)
-			)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(fill no)
-			(layer "F.Fab")
-		)
-		(pad "1" smd roundrect
-			(at -0.9375 -0.95)
-			(size 1.475 0.6)
-			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 1 "2")
-			(roundrect_rratio 0.25)
-		)
-		(pad "2" smd roundrect
-			(at -0.9375 0.95)
-			(size 1.475 0.6)
-			(layers "F.Cu" "F.Mask" "F.Paste")
-			(roundrect_rratio 0.25)
-		)
-		(pad "3" smd roundrect
-			(at 0.9375 0)
-			(size 1.475 0.6)
-			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 4 "v_out")
-			(roundrect_rratio 0.25)
-		)
-		(embedded_fonts no)
-		(model "${KICAD10_3DMODEL_DIR}/Package_TO_SOT_SMD.3dshapes/SOT-23.step"
 			(offset
 				(xyz 0 0 0)
 			)

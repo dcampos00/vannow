@@ -152,12 +152,18 @@ module LonelyBinary_ESP32S3_N16R8:
     left_header = new Header_1x22
     right_header = new Header_1x22
 
-    # Power Rails
+    # Power Rails (Official Espressif ESP32-S3-DevKitC-1 v1.1 mapping)
+    # J1: Pin 1 is 3V3, Pin 21 is 5V (VIN), Pin 22 is GND
     signal V3P3 ~ left_header.pin_1
-    signal VIN ~ right_header.pin_1
-    signal GND ~ right_header.pin_2
+    signal VIN ~ left_header.pin_21
+    signal GND ~ left_header.pin_22
 
-    # Map signals to physical headers as per S3 DevKitC-1 pinout
+    # J3: Pin 1, 21, and 22 are physical GND
+    right_header.pin_1 ~ GND
+    right_header.pin_21 ~ GND
+    right_header.pin_22 ~ GND
+
+    # Map signals to physical headers as per S3 DevKitC-1 v1.1 schematic
     # J1 (Left Row)
     signal GPIO4 ~ left_header.pin_4
     signal GPIO5 ~ left_header.pin_5
@@ -172,15 +178,10 @@ module LonelyBinary_ESP32S3_N16R8:
     signal GPIO14 ~ left_header.pin_20
 
     # J3 (Right Row)
-    signal GPIO1 ~ right_header.pin_5
-    signal GPIO2 ~ right_header.pin_6
-    signal GPIO21 ~ right_header.pin_19
-    signal GPIO20 ~ right_header.pin_20
-    signal GPIO19 ~ right_header.pin_21
-
-    # Connect secondary grounds together for reliable return paths
-    left_header.pin_22 ~ GND
-    right_header.pin_22 ~ GND
+    # Official pinout: Pin 4 is GPIO1, Pin 5 is GPIO2, Pin 18 is GPIO21
+    signal GPIO1 ~ right_header.pin_4
+    signal GPIO2 ~ right_header.pin_5
+    signal GPIO21 ~ right_header.pin_18
 
 # MP1584EN Buck Regulator Socket Module
 module MP1584EN_Buck_Module:
@@ -325,7 +326,6 @@ module AnalogVoltageDivider:
     r_low = new MyResistor
     r_series = new MyResistor
     c_filter = new MyCapacitor
-    zener = new ZenerDiode
 
     r_high.value = "100kohm"
     r_low.value = "18kohm"
@@ -341,11 +341,9 @@ module AnalogVoltageDivider:
     v_divider ~ c_filter.p1
     c_filter.p2 ~ gnd
 
+    # Series 1k resistor protects ESP32 ADC internal ESD diodes against overvoltage
     v_divider ~ r_series.p1
     r_series.p2 ~ v_out
-
-    zener.cathode ~ v_out
-    zener.anode ~ gnd
 
 
 # ==============================================================================
