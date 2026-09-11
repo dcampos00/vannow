@@ -43,30 +43,30 @@ component MyDiode:
     signal anode ~ pin 2
 
 component Header_1x7:
-    trait is_atomic_part<manufacturer="Generic", partnumber="Header_1x7", footprint="PinSocket_1x07_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x07_Pin">
+    trait is_atomic_part<manufacturer="BOOMELE", partnumber="2.54-1*7P", footprint="PinSocket_1x07_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x07_Pin">
     trait has_designator_prefix<prefix="J">
-    trait has_part_picked<manufacturer="Generic", partno="Header_1x7", supplier_partno="C12360", supplier_id="lcsc">
+    trait has_part_picked<manufacturer="BOOMELE", partno="2.54-1*7P", supplier_partno="C2883698", supplier_id="lcsc">
     signal pin_1 ~ pin 1; signal pin_2 ~ pin 2; signal pin_3 ~ pin 3; signal pin_4 ~ pin 4
     signal pin_5 ~ pin 5; signal pin_6 ~ pin 6; signal pin_7 ~ pin 7
 
 component Header_1x2:
-    trait is_atomic_part<manufacturer="Generic", partnumber="Header_1x2", footprint="PinSocket_1x02_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x02_Pin">
+    trait is_atomic_part<manufacturer="BOOMELE", partnumber="2.54-1*2P", footprint="PinSocket_1x02_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x02_Pin">
     trait has_designator_prefix<prefix="J">
-    trait has_part_picked<manufacturer="Generic", partno="Header_1x2", supplier_partno="C12349", supplier_id="lcsc">
+    trait has_part_picked<manufacturer="BOOMELE", partno="2.54-1*2P", supplier_partno="C2883693", supplier_id="lcsc">
     signal pin_1 ~ pin 1
     signal pin_2 ~ pin 2
 
 component TactileSwitch_12mm:
     trait is_atomic_part<manufacturer="Omron", partnumber="B3F-4055", footprint="SW_PUSH-12mm.kicad_mod", symbol="Switch:SW_Push">
     trait has_designator_prefix<prefix="SW">
-    trait has_part_picked<manufacturer="Omron", partno="B3F-4055", supplier_partno="C12361", supplier_id="lcsc">
+    trait has_part_picked<manufacturer="Omron", partno="B3F-4055", supplier_partno="C318884", supplier_id="lcsc">
     signal p1 ~ pin 1
     signal p2 ~ pin 2
 
 component RotaryEncoder_EC11:
     trait is_atomic_part<manufacturer="Alps", partnumber="EC11E15244G1", footprint="RotaryEncoder_Alps_EC11E-Switch_Vertical_H20mm.kicad_mod", symbol="Device:RotaryEncoder_Switch">
     trait has_designator_prefix<prefix="SW">
-    trait has_part_picked<manufacturer="Alps", partno="EC11E15244G1", supplier_partno="C12362", supplier_id="lcsc">
+    trait has_part_picked<manufacturer="Alps", partno="EC11E15244G1", supplier_partno="C69480", supplier_id="lcsc">
     signal pin_A ~ pin "A"
     signal pin_B ~ pin "B"
     signal pin_C ~ pin "C"

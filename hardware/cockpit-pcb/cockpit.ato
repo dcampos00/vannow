@@ -43,23 +43,23 @@ component MyDiode:
     signal anode ~ pin 2
 
 component Header_1x7:
-    trait is_atomic_part<manufacturer="Generic", partnumber="Header_1x7", footprint="PinSocket_1x07_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x07_Pin">
+    trait is_atomic_part<manufacturer="BOOMELE", partnumber="2.54-1*7P", footprint="PinSocket_1x07_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x07_Pin">
     trait has_designator_prefix<prefix="J">
-    trait has_part_picked<manufacturer="Generic", partno="Header_1x7", supplier_partno="C12360", supplier_id="lcsc">
+    trait has_part_picked<manufacturer="BOOMELE", partno="2.54-1*7P", supplier_partno="C2883698", supplier_id="lcsc">
     signal pin_1 ~ pin 1; signal pin_2 ~ pin 2; signal pin_3 ~ pin 3; signal pin_4 ~ pin 4
     signal pin_5 ~ pin 5; signal pin_6 ~ pin 6; signal pin_7 ~ pin 7
 
 component ScrewTerminal_2Pin:
-    trait is_atomic_part<manufacturer="Phoenix_Contact", partnumber="MPT_0.5_2_2.54", footprint="TerminalBlock_Phoenix_MPT-0,5-2-2.54_1x02_P2.54mm_Horizontal.kicad_mod", symbol="Connector:Screw_Terminal_01x02">
+    trait is_atomic_part<manufacturer="Cixi_Xinke", partnumber="XY2500V-A-5.08-2P", footprint="TerminalBlock_Phoenix_MPT-0,5-2-2.54_1x02_P2.54mm_Horizontal.kicad_mod", symbol="Connector:Screw_Terminal_01x02">
     trait has_designator_prefix<prefix="J">
-    trait has_part_picked<manufacturer="Phoenix_Contact", partno="MPT_0.5_2_2.54", supplier_partno="C12351", supplier_id="lcsc">
+    trait has_part_picked<manufacturer="Cixi_Xinke", partno="XY2500V-A-5.08-2P", supplier_partno="C39794", supplier_id="lcsc">
     signal pin_1 ~ pin 1
     signal pin_2 ~ pin 2
 
 component ScrewTerminal_4Pin:
-    trait is_atomic_part<manufacturer="Phoenix_Contact", partnumber="MPT_0.5_4_2.54", footprint="TerminalBlock_Phoenix_MPT-0,5-4-2.54_1x04_P2.54mm_Horizontal.kicad_mod", symbol="Connector:Screw_Terminal_01x04">
+    trait is_atomic_part<manufacturer="Cixi_Xinke", partnumber="XY2500V-A-5.08-4P", footprint="TerminalBlock_Phoenix_MPT-0,5-4-2.54_1x04_P2.54mm_Horizontal.kicad_mod", symbol="Connector:Screw_Terminal_01x04">
     trait has_designator_prefix<prefix="J">
-    trait has_part_picked<manufacturer="Phoenix_Contact", partno="MPT_0.5_4_2.54", supplier_partno="C12352", supplier_id="lcsc">
+    trait has_part_picked<manufacturer="Cixi_Xinke", partno="XY2500V-A-5.08-4P", supplier_partno="C39796", supplier_id="lcsc">
     signal pin_1 ~ pin 1
     signal pin_2 ~ pin 2
     signal pin_3 ~ pin 3

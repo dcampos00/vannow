@@ -44,9 +44,9 @@ component MOSFET_NChannel:
     signal drain ~ pin 3
 
 component MOSFET_PChannel:
-    trait is_atomic_part<manufacturer="Generic", partnumber="SOIC8_PMOS", footprint="SOIC-8_3.9x4.9mm_P1.27mm.kicad_mod", symbol="Device:Q_PMOS_DGS">
+    trait is_atomic_part<manufacturer="Alpha & Omega Semiconductor", partnumber="AO4407A", footprint="SOIC-8_3.9x4.9mm_P1.27mm.kicad_mod", symbol="Device:Q_PMOS_DGS">
     trait has_designator_prefix<prefix="Q">
-    trait has_part_picked<manufacturer="Generic", partno="SOIC8_PMOS", supplier_partno="C12345", supplier_id="lcsc">
+    trait has_part_picked<manufacturer="Alpha & Omega Semiconductor", partno="AO4407A", supplier_partno="C15127", supplier_id="lcsc">
     # AO4407A Pinout: Pins 1,2,3 are Source; Pin 4 is Gate; Pins 5,6,7,8 are Drain
     signal source1 ~ pin 1
     signal source2 ~ pin 2
@@ -68,9 +68,9 @@ component PROFET_ITS4140N:
     signal Vbb2 ~ pin 4
 
 component Optocoupler_PC817:
-    trait is_atomic_part<manufacturer="Generic", partnumber="PC817", footprint="DIP-4_W7.62mm.kicad_mod", symbol="Isolator:PC817">
+    trait is_atomic_part<manufacturer="Everlight", partnumber="EL817C", footprint="DIP-4_W7.62mm.kicad_mod", symbol="Isolator:PC817">
     trait has_designator_prefix<prefix="U">
-    trait has_part_picked<manufacturer="Generic", partno="PC817", supplier_partno="C22038", supplier_id="lcsc">
+    trait has_part_picked<manufacturer="Everlight", partno="EL817C", supplier_partno="C22038", supplier_id="lcsc">
     # DIP-4 Pinout: Pin 1 is Anode; Pin 2 is Cathode; Pin 3 is Emitter; Pin 4 is Collector
     signal anode ~ pin 1
     signal cathode ~ pin 2
@@ -78,23 +78,30 @@ component Optocoupler_PC817:
     signal collector ~ pin 4
 
 component MyDiode:
-    trait is_atomic_part<manufacturer="Generic", partnumber="DO201_Diode", footprint="D_DO-201AD_P15.24mm_Horizontal.kicad_mod", symbol="Device:D">
+    trait is_atomic_part<manufacturer="MDD", partnumber="1N5408", footprint="D_DO-201AD_P15.24mm_Horizontal.kicad_mod", symbol="Device:D">
     trait has_designator_prefix<prefix="D">
-    trait has_part_picked<manufacturer="Generic", partno="DO201_Diode", supplier_partno="C12347", supplier_id="lcsc">
+    trait has_part_picked<manufacturer="MDD", partno="1N5408", supplier_partno="C81588", supplier_id="lcsc">
     signal cathode ~ pin 1
     signal anode ~ pin 2
 
-component ZenerDiode:
-    trait is_atomic_part<manufacturer="Nexperia", partnumber="BZX84-C3V3", footprint="SOT-23.kicad_mod", symbol="Device:D_Zener">
+component TVS_Diode_SM8S24A:
+    trait is_atomic_part<manufacturer="Vishay", partnumber="SM8S24A", footprint="D_DO-218AB.kicad_mod", symbol="Device:D_TVS">
     trait has_designator_prefix<prefix="D">
-    trait has_part_picked<manufacturer="Nexperia", partno="BZX84-C3V3", supplier_partno="C2168", supplier_id="lcsc">
+    trait has_part_picked<manufacturer="Vishay", partno="SM8S24A", supplier_partno="C2834898", supplier_id="lcsc">
+    signal cathode ~ pin 1
+    signal anode ~ pin 2
+
+component ZenerDiode_15V:
+    trait is_atomic_part<manufacturer="Nexperia", partnumber="BZX84-C15", footprint="SOT-23.kicad_mod", symbol="Device:D_Zener">
+    trait has_designator_prefix<prefix="D">
+    trait has_part_picked<manufacturer="Nexperia", partno="BZX84-C15", supplier_partno="C8341", supplier_id="lcsc">
     signal anode ~ pin 1
     signal cathode ~ pin 3
 
 component Header_1x22:
-    trait is_atomic_part<manufacturer="Generic", partnumber="Header_1x22", footprint="PinSocket_1x22_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x22_Pin">
+    trait is_atomic_part<manufacturer="BOOMELE", partnumber="2.54-1*22P", footprint="PinSocket_1x22_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x22_Pin">
     trait has_designator_prefix<prefix="J">
-    trait has_part_picked<manufacturer="Generic", partno="Header_1x22", supplier_partno="C12348", supplier_id="lcsc">
+    trait has_part_picked<manufacturer="BOOMELE", partno="2.54-1*22P", supplier_partno="C225576", supplier_id="lcsc">
     signal pin_1 ~ pin 1; signal pin_2 ~ pin 2; signal pin_3 ~ pin 3; signal pin_4 ~ pin 4; signal pin_5 ~ pin 5
     signal pin_6 ~ pin 6; signal pin_7 ~ pin 7; signal pin_8 ~ pin 8; signal pin_9 ~ pin 9; signal pin_10 ~ pin 10
     signal pin_11 ~ pin 11; signal pin_12 ~ pin 12; signal pin_13 ~ pin 13; signal pin_14 ~ pin 14; signal pin_15 ~ pin 15
@@ -102,16 +109,16 @@ component Header_1x22:
     signal pin_21 ~ pin 21; signal pin_22 ~ pin 22
 
 component Header_1x2:
-    trait is_atomic_part<manufacturer="Generic", partnumber="Header_1x2", footprint="PinSocket_1x02_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x02_Pin">
+    trait is_atomic_part<manufacturer="BOOMELE", partnumber="2.54-1*2P", footprint="PinSocket_1x02_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x02_Pin">
     trait has_designator_prefix<prefix="J">
-    trait has_part_picked<manufacturer="Generic", partno="Header_1x2", supplier_partno="C12349", supplier_id="lcsc">
+    trait has_part_picked<manufacturer="BOOMELE", partno="2.54-1*2P", supplier_partno="C2883693", supplier_id="lcsc">
     signal pin_1 ~ pin 1
     signal pin_2 ~ pin 2
 
 component Header_1x5:
-    trait is_atomic_part<manufacturer="Generic", partnumber="Header_1x5", footprint="PinSocket_1x05_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x05_Pin">
+    trait is_atomic_part<manufacturer="BOOMELE", partnumber="2.54-1*5P", footprint="PinSocket_1x05_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x05_Pin">
     trait has_designator_prefix<prefix="J">
-    trait has_part_picked<manufacturer="Generic", partno="Header_1x5", supplier_partno="C12350", supplier_id="lcsc">
+    trait has_part_picked<manufacturer="BOOMELE", partno="2.54-1*5P", supplier_partno="C2883696", supplier_id="lcsc">
     signal pin_1 ~ pin 1
     signal pin_2 ~ pin 2
     signal pin_3 ~ pin 3
@@ -119,25 +126,25 @@ component Header_1x5:
     signal pin_5 ~ pin 5
 
 component Header_1x4:
-    trait is_atomic_part<manufacturer="Generic", partnumber="Header_1x4", footprint="PinSocket_1x04_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x04_Pin">
+    trait is_atomic_part<manufacturer="BOOMELE", partnumber="2.54-1*4P", footprint="PinSocket_1x04_P2.54mm_Vertical.kicad_mod", symbol="Connector:Conn_01x04_Pin">
     trait has_designator_prefix<prefix="J">
-    trait has_part_picked<manufacturer="Generic", partno="Header_1x4", supplier_partno="C12353", supplier_id="lcsc">
+    trait has_part_picked<manufacturer="BOOMELE", partno="2.54-1*4P", supplier_partno="C2883695", supplier_id="lcsc">
     signal pin_1 ~ pin 1
     signal pin_2 ~ pin 2
     signal pin_3 ~ pin 3
     signal pin_4 ~ pin 4
 
 component ScrewTerminal_2Pin:
-    trait is_atomic_part<manufacturer="Phoenix_Contact", partnumber="MPT_0.5_2_2.54", footprint="TerminalBlock_Phoenix_MPT-0,5-2-2.54_1x02_P2.54mm_Horizontal.kicad_mod", symbol="Connector:Screw_Terminal_01x02">
+    trait is_atomic_part<manufacturer="Cixi_Xinke", partnumber="XY2500V-A-5.08-2P", footprint="TerminalBlock_Phoenix_MPT-0,5-2-2.54_1x02_P2.54mm_Horizontal.kicad_mod", symbol="Connector:Screw_Terminal_01x02">
     trait has_designator_prefix<prefix="J">
-    trait has_part_picked<manufacturer="Phoenix_Contact", partno="MPT_0.5_2_2.54", supplier_partno="C12351", supplier_id="lcsc">
+    trait has_part_picked<manufacturer="Cixi_Xinke", partno="XY2500V-A-5.08-2P", supplier_partno="C39794", supplier_id="lcsc">
     signal pin_1 ~ pin 1
     signal pin_2 ~ pin 2
 
 component ScrewTerminal_4Pin:
-    trait is_atomic_part<manufacturer="Phoenix_Contact", partnumber="MPT_0.5_4_2.54", footprint="TerminalBlock_Phoenix_MPT-0,5-4-2.54_1x04_P2.54mm_Horizontal.kicad_mod", symbol="Connector:Screw_Terminal_01x04">
+    trait is_atomic_part<manufacturer="Cixi_Xinke", partnumber="XY2500V-A-5.08-4P", footprint="TerminalBlock_Phoenix_MPT-0,5-4-2.54_1x04_P2.54mm_Horizontal.kicad_mod", symbol="Connector:Screw_Terminal_01x04">
     trait has_designator_prefix<prefix="J">
-    trait has_part_picked<manufacturer="Phoenix_Contact", partno="MPT_0.5_4_2.54", supplier_partno="C12352", supplier_id="lcsc">
+    trait has_part_picked<manufacturer="Cixi_Xinke", partno="XY2500V-A-5.08-4P", supplier_partno="C39796", supplier_id="lcsc">
     signal pin_1 ~ pin 1
     signal pin_2 ~ pin 2
     signal pin_3 ~ pin 3
@@ -411,8 +418,34 @@ module VanCentralControllerPROFET:
 
     # Main Power Input Connector (Switched 12V from battery fuse panel)
     pwr_terminal = new ScrewTerminal_2Pin
-    v_bat_12v ~ pwr_terminal.pin_1
+    signal pwr_raw_12v ~ pwr_terminal.pin_1
     gnd ~ pwr_terminal.pin_2
+
+    # Automotive Transient Voltage Suppressor (ISO 7637-2 / ISO 16750-2 Load Dump clamp)
+    tvs_clamp = new TVS_Diode_SM8S24A
+    pwr_raw_12v ~ tvs_clamp.cathode
+    gnd ~ tvs_clamp.anode
+
+    # High-Side Reverse Polarity Protection (AO4407A P-FET + Gate Resistor + 15V Zener Clamp)
+    pmos_rev_protect = new MOSFET_PChannel
+    r_pmos_gate = new MyResistor
+    r_pmos_gate.value = "100kohm"
+    z_pmos_gate = new ZenerDiode_15V
+
+    pwr_raw_12v ~ pmos_rev_protect.source1
+    pwr_raw_12v ~ pmos_rev_protect.source2
+    pwr_raw_12v ~ pmos_rev_protect.source3
+    pmos_rev_protect.drain1 ~ v_bat_12v
+    pmos_rev_protect.drain2 ~ v_bat_12v
+    pmos_rev_protect.drain3 ~ v_bat_12v
+    pmos_rev_protect.drain4 ~ v_bat_12v
+
+    pmos_rev_protect.gate ~ r_pmos_gate.p1
+    r_pmos_gate.p2 ~ gnd
+
+    # Gate-to-Source 15V Zener clamp protects gate oxide from load dump transients
+    pwr_raw_12v ~ z_pmos_gate.cathode
+    pmos_rev_protect.gate ~ z_pmos_gate.anode
 
     # ----------------------------------------
     # Power Supply & Regulators
@@ -458,21 +491,25 @@ module VanCentralControllerPROFET:
     led_zone1_terminal = new ScrewTerminal_4Pin
     led_zone1_stage.power_out ~ led_zone1_terminal.pin_1 # AUTO
     v_bat_12v ~ led_zone1_terminal.pin_2 # 12V
+    signal led_zone1_sw_return ~ led_zone1_terminal.pin_3 # SPDT switch common return to load
     gnd ~ led_zone1_terminal.pin_4 # LOAD GND return
 
     led_zone2_terminal = new ScrewTerminal_4Pin
     led_zone2_stage.power_out ~ led_zone2_terminal.pin_1 # AUTO
     v_bat_12v ~ led_zone2_terminal.pin_2 # 12V
+    signal led_zone2_sw_return ~ led_zone2_terminal.pin_3 # SPDT switch common return to load
     gnd ~ led_zone2_terminal.pin_4 # LOAD GND return
 
     led_zone3_terminal = new ScrewTerminal_4Pin
     led_zone3_stage.power_out ~ led_zone3_terminal.pin_1 # AUTO
     v_bat_12v ~ led_zone3_terminal.pin_2 # 12V
+    signal led_zone3_sw_return ~ led_zone3_terminal.pin_3 # SPDT switch common return to load
     gnd ~ led_zone3_terminal.pin_4 # LOAD GND return
 
     led_zone4_terminal = new ScrewTerminal_4Pin
     led_zone4_stage.power_out ~ led_zone4_terminal.pin_1 # AUTO
     v_bat_12v ~ led_zone4_terminal.pin_2 # 12V
+    signal led_zone4_sw_return ~ led_zone4_terminal.pin_3 # SPDT switch common return to load
     gnd ~ led_zone4_terminal.pin_4 # LOAD GND return
 
     # ----------------------------------------
