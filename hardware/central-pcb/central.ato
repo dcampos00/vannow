@@ -91,6 +91,14 @@ component TVS_Diode_SM8S24A:
     signal cathode ~ pin 1
     signal anode ~ pin 2
 
+component Schottky_BAT54S:
+    trait is_atomic_part<manufacturer="Nexperia", partnumber="BAT54S", footprint="SOT-23.kicad_mod", symbol="Device:D_Schottky_Series">
+    trait has_designator_prefix<prefix="D">
+    trait has_part_picked<manufacturer="Nexperia", partno="BAT54S", supplier_partno="C2411", supplier_id="lcsc">
+    signal anode ~ pin 1
+    signal common ~ pin 2
+    signal cathode ~ pin 3
+
 component ZenerDiode_15V:
     trait is_atomic_part<manufacturer="Nexperia", partnumber="BZX84-C15", footprint="SOT-23.kicad_mod", symbol="Device:D_Zener">
     trait has_designator_prefix<prefix="D">
@@ -339,11 +347,13 @@ module AnalogVoltageDivider:
     signal v_bat
     signal v_out
     signal gnd
+    signal vcc
 
     r_high = new MyResistor
     r_low = new MyResistor
     r_series = new MyResistor
     c_filter = new MyCapacitor
+    clamp = new Schottky_BAT54S
 
     r_high.value = "100kohm"
     r_low.value = "18kohm"
@@ -362,6 +372,11 @@ module AnalogVoltageDivider:
     # Series 1k resistor protects ESP32 ADC internal ESD diodes against overvoltage
     v_divider ~ r_series.p1
     r_series.p2 ~ v_out
+
+    # BAT54S rail clamp: pin1=GND, pin2=v_out, pin3=3V3 (low-leakage vs 3.3V Zener)
+    gnd ~ clamp.anode
+    v_out ~ clamp.common
+    vcc ~ clamp.cathode
 
 
 # ==============================================================================
@@ -531,16 +546,20 @@ module VanCentralControllerPROFET:
     v_bat_12v ~ pump_stage.power_in
     gnd ~ pump_stage.gnd
 
-    # Flyback diode for pump protection
-    pump_diode = new MyDiode
-    pump_terminal.pin_3 ~ pump_diode.cathode # Cathode
-    gnd ~ pump_diode.anode # Anode
-
     # 4-pin SPDT Override Terminal Block
     pump_terminal = new ScrewTerminal_4Pin
     pump_stage.power_out ~ pump_terminal.pin_1 # AUTO
     v_bat_12v ~ pump_terminal.pin_2 # 12V
+    signal pump_load_pos ~ pump_terminal.pin_3 # Switch common / load+
     gnd ~ pump_terminal.pin_4 # LOAD GND return
+
+    # Flyback across PROFET output (AUTO) and across load+ (manual ON)
+    pump_diode_auto = new MyDiode
+    pump_stage.power_out ~ pump_diode_auto.cathode
+    gnd ~ pump_diode_auto.anode
+    pump_diode_load = new MyDiode
+    pump_load_pos ~ pump_diode_load.cathode
+    gnd ~ pump_diode_load.anode
 
     # ----------------------------------------
     # Aux Outlets 1-3 (GPIO 5, 6, 7 - Smart PROFETs)
@@ -556,7 +575,7 @@ module VanCentralControllerPROFET:
     gnd ~ aux1_terminal.pin_2
 
     # ----------------------------------------
-    # Ceiling Fan (GPIO 19 - Discrete MOSFET)
+    # Ceiling Fan (GPIO 17 - Discrete MOSFET)
     # ----------------------------------------
     fan_stage = new PChannelHighSideSwitch
     esp32.GPIO17 ~ fan_stage.control
@@ -598,6 +617,7 @@ module VanCentralControllerPROFET:
     voltage_sensor = new AnalogVoltageDivider
     v_bat_12v ~ voltage_sensor.v_bat
     gnd ~ voltage_sensor.gnd
+    v_mcu_3v3 ~ voltage_sensor.vcc
     esp32.GPIO1 ~ voltage_sensor.v_out
 
     # ----------------------------------------
@@ -701,6 +721,7 @@ module VanCentralControllerModular:
     voltage_sensor = new AnalogVoltageDivider
     v_bat_12v ~ voltage_sensor.v_bat
     gnd ~ voltage_sensor.gnd
+    v_mcu_3v3 ~ voltage_sensor.vcc
     esp32.GPIO1 ~ voltage_sensor.v_out
 
     # ----------------------------------------
@@ -926,11 +947,91 @@ module VanCentralController24Ch:
     gnd ~ aux_sig3_opto.gnd
 
     # ----------------------------------------
+    # Load terminals (2-pin: output / isolated pair + GND or dry contact)
+    # ----------------------------------------
+    led1_term = new ScrewTerminal_2Pin
+    led_zone1.power_out ~ led1_term.pin_1
+    gnd ~ led1_term.pin_2
+    led2_term = new ScrewTerminal_2Pin
+    led_zone2.power_out ~ led2_term.pin_1
+    gnd ~ led2_term.pin_2
+    led3_term = new ScrewTerminal_2Pin
+    led_zone3.power_out ~ led3_term.pin_1
+    gnd ~ led3_term.pin_2
+    led4_term = new ScrewTerminal_2Pin
+    led_zone4.power_out ~ led4_term.pin_1
+    gnd ~ led4_term.pin_2
+
+    pump_term = new ScrewTerminal_2Pin
+    pump.power_out ~ pump_term.pin_1
+    gnd ~ pump_term.pin_2
+    ext_driver_term = new ScrewTerminal_2Pin
+    ext_driver.power_out ~ ext_driver_term.pin_1
+    gnd ~ ext_driver_term.pin_2
+    ext_passenger_term = new ScrewTerminal_2Pin
+    ext_passenger.power_out ~ ext_passenger_term.pin_1
+    gnd ~ ext_passenger_term.pin_2
+    lightbar_term = new ScrewTerminal_2Pin
+    lightbar.power_out ~ lightbar_term.pin_1
+    gnd ~ lightbar_term.pin_2
+    fan_term = new ScrewTerminal_2Pin
+    fan_pwr.power_out ~ fan_term.pin_1
+    gnd ~ fan_term.pin_2
+
+    aux1_term = new ScrewTerminal_2Pin
+    aux_pwr1.power_out ~ aux1_term.pin_1
+    gnd ~ aux1_term.pin_2
+    aux2_term = new ScrewTerminal_2Pin
+    aux_pwr2.power_out ~ aux2_term.pin_1
+    gnd ~ aux2_term.pin_2
+    aux3_term = new ScrewTerminal_2Pin
+    aux_pwr3.power_out ~ aux3_term.pin_1
+    gnd ~ aux3_term.pin_2
+    aux4_term = new ScrewTerminal_2Pin
+    aux_pwr4.power_out ~ aux4_term.pin_1
+    gnd ~ aux4_term.pin_2
+    aux5_term = new ScrewTerminal_2Pin
+    aux_pwr5.power_out ~ aux5_term.pin_1
+    gnd ~ aux5_term.pin_2
+
+    inv_term = new ScrewTerminal_2Pin
+    inverter_opto.out_collector ~ inv_term.pin_1
+    inverter_opto.out_emitter ~ inv_term.pin_2
+    orion1_term = new ScrewTerminal_2Pin
+    orion1_opto.out_collector ~ orion1_term.pin_1
+    orion1_opto.out_emitter ~ orion1_term.pin_2
+    orion2_term = new ScrewTerminal_2Pin
+    orion2_opto.out_collector ~ orion2_term.pin_1
+    orion2_opto.out_emitter ~ orion2_term.pin_2
+    mppt_term = new ScrewTerminal_2Pin
+    mppt_opto.out_collector ~ mppt_term.pin_1
+    mppt_opto.out_emitter ~ mppt_term.pin_2
+    heater_term = new ScrewTerminal_2Pin
+    heater_opto.out_collector ~ heater_term.pin_1
+    heater_opto.out_emitter ~ heater_term.pin_2
+    fridge_term = new ScrewTerminal_2Pin
+    fridge_opto.out_collector ~ fridge_term.pin_1
+    fridge_opto.out_emitter ~ fridge_term.pin_2
+    fan_pulse_term = new ScrewTerminal_2Pin
+    fan_pulse_opto.out_collector ~ fan_pulse_term.pin_1
+    fan_pulse_opto.out_emitter ~ fan_pulse_term.pin_2
+    aux_sig1_term = new ScrewTerminal_2Pin
+    aux_sig1_opto.out_collector ~ aux_sig1_term.pin_1
+    aux_sig1_opto.out_emitter ~ aux_sig1_term.pin_2
+    aux_sig2_term = new ScrewTerminal_2Pin
+    aux_sig2_opto.out_collector ~ aux_sig2_term.pin_1
+    aux_sig2_opto.out_emitter ~ aux_sig2_term.pin_2
+    aux_sig3_term = new ScrewTerminal_2Pin
+    aux_sig3_opto.out_collector ~ aux_sig3_term.pin_1
+    aux_sig3_opto.out_emitter ~ aux_sig3_term.pin_2
+
+    # ----------------------------------------
     # Battery Telemetry (GPIO 1)
     # ----------------------------------------
     voltage_sensor = new AnalogVoltageDivider
     v_bat_12v ~ voltage_sensor.v_bat
     gnd ~ voltage_sensor.gnd
+    v_mcu_3v3 ~ voltage_sensor.vcc
     esp32.GPIO1 ~ voltage_sensor.v_out
 
     # ----------------------------------------
