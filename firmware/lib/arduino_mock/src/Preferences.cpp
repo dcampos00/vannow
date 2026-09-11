@@ -86,6 +86,25 @@ uint32_t Preferences::getUInt(const char* key, uint32_t defaultValue) {
     }
 }
 
+size_t Preferences::putULong64(const char* key, uint64_t value) {
+    if (!_opened || _readOnly || !key) return 0;
+    g_mockNvs[_currentNamespace][key] = std::to_string(value);
+    return 8;
+}
+
+uint64_t Preferences::getULong64(const char* key, uint64_t defaultValue) {
+    if (!_opened || !key) return defaultValue;
+    auto nsIt = g_mockNvs.find(_currentNamespace);
+    if (nsIt == g_mockNvs.end()) return defaultValue;
+    auto keyIt = nsIt->second.find(key);
+    if (keyIt == nsIt->second.end()) return defaultValue;
+    try {
+        return static_cast<uint64_t>(std::stoull(keyIt->second));
+    } catch (...) {
+        return defaultValue;
+    }
+}
+
 size_t Preferences::putInt(const char* key, int32_t value) {
     if (!_opened || _readOnly || !key) return 0;
     g_mockNvs[_currentNamespace][key] = std::to_string(value);

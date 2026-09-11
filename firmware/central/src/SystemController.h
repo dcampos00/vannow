@@ -49,6 +49,8 @@ public:
     static constexpr uint8_t MAX_REMOTE_MAPPINGS = 64;
     static constexpr uint8_t DEFAULT_CHANNEL_COUNT = 24;
     static constexpr uint8_t NUM_CHANNELS = DEFAULT_CHANNEL_COUNT; // Backwards-compatible alias
+    static constexpr uint8_t ENCODER_BUTTON_INDEX = 7;
+    static constexpr uint8_t MAX_TRACKED_REMOTES = 8;
 
     // Default constructor: loads default 24-channel configuration and standard remote mappings
     SystemController();
@@ -95,6 +97,8 @@ public:
     void setPumpChannelIndex(int8_t channelIndex);
     int8_t getPumpChannelIndex() const;
 
+    int8_t getFocusChannel(uint8_t remoteId) const;
+
     // Authoritative default configurations
     static const ChannelConfig DEFAULT_24CH_CONFIG[DEFAULT_CHANNEL_COUNT];
     static const RemoteMapping DEFAULT_REMOTE_MAPPINGS[20];
@@ -103,6 +107,9 @@ public:
 private:
     void initChannels(const ChannelConfig* channelConfigs, size_t channelCount);
     static void onChannelChanged(uint8_t channelIndex, void* context);
+    void rememberFocus(uint8_t remoteId, int16_t channelIndex);
+    void loadAntiReplayState();
+    void saveAntiReplayState(uint8_t remoteId);
 
     Channel* _channels[MAX_CHANNELS];
     uint8_t _channelCount;
@@ -113,6 +120,7 @@ private:
     AntiReplayFilter _antiReplay;
     uint32_t _pumpShowerTimeoutMs;
     int8_t _pumpChannelIndex;
+    int8_t _focusChannel[MAX_TRACKED_REMOTES + 1];
 
     // Configuration parameters for main battery reading
     static constexpr uint8_t BATTERY_ADC_PIN = 1;

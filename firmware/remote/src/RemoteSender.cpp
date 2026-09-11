@@ -1,4 +1,5 @@
 #include "RemoteSender.h"
+#include <Preferences.h>
 
 // Define static members
 volatile bool RemoteSender::_messageSent = false;
@@ -21,6 +22,14 @@ void RemoteSender::OnDataSent(const wifi_tx_info_t *tx_info, esp_now_send_status
 }
 
 bool RemoteSender::begin(const uint8_t* customMac) {
+    if (msgSequenceNumber == 0) {
+        Preferences prefs;
+        if (prefs.begin("vannow_seq", true)) {
+            msgSequenceNumber = prefs.getUInt("seq", 0);
+            prefs.end();
+        }
+    }
+
     // Initialize battery reading pin if assigned
     if (_batteryPin != 255) {
         pinMode(_batteryPin, INPUT);
@@ -86,5 +95,18 @@ bool RemoteSender::send(ActionType action, uint8_t buttonIndex, int8_t rotationS
 
     bool delivered = _messageSent && _deliverySuccess;
     _messageSent = false;
+    persistSequence();
     return delivered;
+}
+
+void RemoteSender::persistSequence() {
+    if (msgSequenceNumber == 0) {
+        return;
+    }
+    Preferences prefs;
+    if (!prefs.begin("vannow_seq", false)) {
+        return;
+    }
+    prefs.putUInt("seq", msgSequenceNumber);
+    prefs.end();
 }

@@ -25,6 +25,9 @@ public:
     size_t putUInt(const char* key, uint32_t value);
     uint32_t getUInt(const char* key, uint32_t defaultValue = 0);
 
+    size_t putULong64(const char* key, uint64_t value);
+    uint64_t getULong64(const char* key, uint64_t defaultValue = 0);
+
     size_t putInt(const char* key, int32_t value);
     int32_t getInt(const char* key, int32_t defaultValue = 0);
 

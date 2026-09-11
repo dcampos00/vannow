@@ -10,8 +10,9 @@ PulseChannel::PulseChannel(const char* name, uint8_t pin, uint32_t pulseDuration
 
 void PulseChannel::handleAction(ActionType action, int8_t rotationSteps) {
     (void)rotationSteps;
-    // Any click, double click, or hold event triggers the momentary pulse
-    if (action == ActionType::Click || action == ActionType::DoubleClick || action == ActionType::StartHold) {
+    // Only discrete press events trigger a pulse. Ignore StartHold keep-alives
+    // so a held button cannot retrigger Maxxair / generator crank every 150 ms.
+    if (action == ActionType::Click || action == ActionType::DoubleClick) {
         trigger();
     }
 }

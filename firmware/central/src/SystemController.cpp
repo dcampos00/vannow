@@ -32,14 +32,13 @@ const ChannelConfig SystemController::DEFAULT_24CH_CONFIG[DEFAULT_CHANNEL_COUNT]
 };
 
 const RemoteMapping SystemController::DEFAULT_REMOTE_MAPPINGS[20] = {
-    // Remote 1: Entry Panel (7 buttons)
-    {1, 0, 0, SpecialRemoteAction::None},  // Button 0 -> Ch 0: Lights Zone 1
-    {1, 1, 1, SpecialRemoteAction::None},  // Button 1 -> Ch 1: Lights Zone 2
-    {1, 2, 4, SpecialRemoteAction::None},  // Button 2 -> Ch 4: Water Pump
-    {1, 3, 14, SpecialRemoteAction::None}, // Button 3 -> Ch 14: Inverter MultiPlus II
-    {1, 4, 2, SpecialRemoteAction::None},  // Button 4 -> Ch 2: Lights Zone 3
-    {1, 5, 3, SpecialRemoteAction::None},  // Button 5 -> Ch 3: Lights Zone 4
-    {1, 6, 8, SpecialRemoteAction::None},  // Button 6 -> Ch 8: Maxxair Fan Power
+    // Remote 1: Entrance panel — faceplate order (4 zones + pump + night). Encoder uses ENCODER_BUTTON_INDEX.
+    {1, 0, 0, SpecialRemoteAction::None},             // BTN1 -> Ch 0: Lights Zone 1
+    {1, 1, 1, SpecialRemoteAction::None},             // BTN2 -> Ch 1: Lights Zone 2
+    {1, 2, 2, SpecialRemoteAction::None},             // BTN3 -> Ch 2: Lights Zone 3
+    {1, 3, 3, SpecialRemoteAction::None},             // BTN4 -> Ch 3: Lights Zone 4
+    {1, 4, 4, SpecialRemoteAction::None},             // BTN5 -> Ch 4: Water Pump
+    {1, 5, -1, SpecialRemoteAction::TurnOffAllLights}, // BTN6 -> Master Night Shutdown
 
     // Remote 2: Bed Panel (7 buttons)
     {2, 0, 2, SpecialRemoteAction::None},  // Button 0 -> Ch 2: Lights Zone 3
@@ -50,7 +49,7 @@ const RemoteMapping SystemController::DEFAULT_REMOTE_MAPPINGS[20] = {
     {2, 5, 1, SpecialRemoteAction::None},  // Button 5 -> Ch 1: Lights Zone 2
     {2, 6, 4, SpecialRemoteAction::None},  // Button 6 -> Ch 4: Water Pump
 
-    // Remote 3: Cockpit Panel (6 Carling rocker switches)
+    // Remote 3: Cockpit Panel (6 Carling rocker switches, edge-only)
     {3, 0, 5, SpecialRemoteAction::None},  // SW1 -> Ch 5: Exterior Driver Light
     {3, 1, 15, SpecialRemoteAction::None}, // SW2 -> Ch 15: Orion-XS #1 Remote Enable
     {3, 2, 0, SpecialRemoteAction::None},  // SW3 -> Ch 0: Lights Zone 1
@@ -59,7 +58,7 @@ const RemoteMapping SystemController::DEFAULT_REMOTE_MAPPINGS[20] = {
     {3, 5, 8, SpecialRemoteAction::None}   // SW6 -> Ch 8: Maxxair Fan Power
 };
 
-const size_t SystemController::DEFAULT_REMOTE_MAPPING_COUNT = 20;
+const size_t SystemController::DEFAULT_REMOTE_MAPPING_COUNT = 19;
 
 SystemController::SystemController()
     : SystemController(DEFAULT_24CH_CONFIG, DEFAULT_CHANNEL_COUNT,
@@ -73,6 +72,9 @@ SystemController::SystemController(const ChannelConfig* channelConfigs, size_t c
       _pumpChannelIndex(-1) {
     for (size_t i = 0; i < MAX_CHANNELS; i++) {
         _channels[i] = nullptr;
+    }
+    for (size_t i = 0; i <= MAX_TRACKED_REMOTES; i++) {
+        _focusChannel[i] = 0; // Default dimmer focus: Zone 1
     }
 
     // Initialize channels from configuration array
@@ -187,8 +189,9 @@ void SystemController::begin() {
         }
     }
 
-    // 2. Restore persisted channel states from NVS before attaching runtime change callbacks
+    // 2. Restore persisted channel states and anti-replay windows from NVS
     loadPersistedStates();
+    loadAntiReplayState();
 
     // 3. Register state change callbacks for persistence
     for (uint8_t i = 0; i < _channelCount; i++) {
@@ -364,14 +367,31 @@ void SystemController::dispatchMessage(const uint8_t* senderMac, const SwitchMes
         return;
     }
 
-    if (msg.battery_voltage < 2.2f && (msg.battery_voltage > 0.5f || msg.battery_voltage == 0.0f)) {
+    saveAntiReplayState(msg.remote_id);
+
+    if (msg.battery_voltage > 0.5f && msg.battery_voltage < 2.2f) {
         Serial.printf("[ALERT] Critical battery on Panel %d. Replace AA batteries.\n", msg.remote_id);
+    }
+
+    // Encoder: dim or boost the last focused lighting zone for this remote
+    if (msg.button_index == ENCODER_BUTTON_INDEX) {
+        int8_t focusIdx = getFocusChannel(msg.remote_id);
+        Channel* focus = (focusIdx >= 0) ? getChannel((uint8_t)focusIdx) : nullptr;
+        if (focus && focus->isDimmable()) {
+            DimmableChannel* dim = static_cast<DimmableChannel*>(focus);
+            if (msg.action == (uint8_t)ActionType::EncoderTurn) {
+                dim->handleAction(ActionType::EncoderTurn, msg.rotation_steps);
+            } else if (msg.action == (uint8_t)ActionType::Click) {
+                dim->setBrightness(100);
+                Serial.printf("Encoder boost: channel [%s] set to 100%%\n", dim->getName());
+            }
+        }
+        return;
     }
 
     int targetChannelIdx = -1;
     SpecialRemoteAction specialAction = SpecialRemoteAction::None;
 
-    // Look up mapping in decoupled routing table
     for (size_t i = 0; i < _remoteMappingCount; i++) {
         if (_remoteMappings[i].remoteId == msg.remote_id &&
             _remoteMappings[i].buttonIndex == msg.button_index) {
@@ -381,7 +401,6 @@ void SystemController::dispatchMessage(const uint8_t* senderMac, const SwitchMes
         }
     }
 
-    // Handle global macro actions
     if (specialAction == SpecialRemoteAction::TurnOffAllLights) {
         Serial.println("Action: Turn off all dimmable lights");
         for (uint8_t i = 0; i < _channelCount; i++) {
@@ -392,14 +411,13 @@ void SystemController::dispatchMessage(const uint8_t* senderMac, const SwitchMes
         return;
     }
 
-    // Special handling for Water Pump Shower Mode
+    // Shower Mode is pump-specific. Keep-alive StartHold packets must not cancel it.
     if (targetChannelIdx >= 0 && targetChannelIdx == _pumpChannelIndex &&
         (msg.action == (uint8_t)ActionType::DoubleClick || msg.action == (uint8_t)ActionType::StartHold)) {
         DigitalChannel* pump = static_cast<DigitalChannel*>(_channels[_pumpChannelIndex]);
         if (pump) {
             if (pump->isTimedActive()) {
-                Serial.println("[Shower Mode] Pump cancelled early by user.");
-                pump->setState(false);
+                Serial.println("[Shower Mode] Keep-alive ignored; use Click to cancel.");
             } else {
                 Serial.printf("[Shower Mode] Activated: %u ms with acoustic chirp\n", _pumpShowerTimeoutMs);
                 pump->activateTimer(_pumpShowerTimeoutMs, true);
@@ -408,8 +426,11 @@ void SystemController::dispatchMessage(const uint8_t* senderMac, const SwitchMes
         }
     }
 
-    // Forward action to target channel
     if (targetChannelIdx >= 0 && targetChannelIdx < _channelCount && _channels[targetChannelIdx]) {
+        if (_channels[targetChannelIdx]->isDimmable() &&
+            (msg.action == (uint8_t)ActionType::Click || msg.action == (uint8_t)ActionType::StartHold)) {
+            rememberFocus(msg.remote_id, (int16_t)targetChannelIdx);
+        }
         _channels[targetChannelIdx]->handleAction((ActionType)msg.action, msg.rotation_steps);
         Serial.printf("Channel [%s] (Index %d) state updated.\n",
                       _channels[targetChannelIdx]->getName(), targetChannelIdx);
@@ -422,4 +443,66 @@ float SystemController::readMainBatteryVoltage() {
     uint32_t mv = analogReadMilliVolts(BATTERY_ADC_PIN);
     float adcVoltage = mv / 1000.0f;
     return adcVoltage * DIVIDER_RATIO;
+}
+
+int8_t SystemController::getFocusChannel(uint8_t remoteId) const {
+    if (remoteId == 0 || remoteId > MAX_TRACKED_REMOTES) {
+        return 0;
+    }
+    return _focusChannel[remoteId];
+}
+
+void SystemController::rememberFocus(uint8_t remoteId, int16_t channelIndex) {
+    if (remoteId == 0 || remoteId > MAX_TRACKED_REMOTES) return;
+    if (channelIndex < 0 || channelIndex >= _channelCount) return;
+    if (!_channels[channelIndex] || !_channels[channelIndex]->isDimmable()) return;
+    _focusChannel[remoteId] = (int8_t)channelIndex;
+}
+
+void SystemController::loadAntiReplayState() {
+    Preferences prefs;
+    if (!prefs.begin("vannow_replay", true)) {
+        return;
+    }
+    for (uint8_t remoteId = 1; remoteId <= MAX_TRACKED_REMOTES; remoteId++) {
+        char keyInit[16];
+        char keySeq[16];
+        char keyBmp[16];
+        snprintf(keyInit, sizeof(keyInit), "r%u_init", remoteId);
+        snprintf(keySeq, sizeof(keySeq), "r%u_seq", remoteId);
+        snprintf(keyBmp, sizeof(keyBmp), "r%u_bmp", remoteId);
+        if (!prefs.isKey(keyInit) || !prefs.getBool(keyInit, false)) {
+            continue;
+        }
+        uint32_t maxSeq = prefs.getUInt(keySeq, 0);
+        uint64_t bitmap = prefs.getULong64(keyBmp, 1ULL);
+        _antiReplay.importState(remoteId, maxSeq, bitmap, true);
+    }
+    prefs.end();
+}
+
+void SystemController::saveAntiReplayState(uint8_t remoteId) {
+    if (remoteId == 0 || remoteId > MAX_TRACKED_REMOTES) return;
+
+    uint32_t maxSeq = 0;
+    uint64_t bitmap = 0;
+    bool initialized = false;
+    if (!_antiReplay.exportState(remoteId, maxSeq, bitmap, initialized) || !initialized) {
+        return;
+    }
+
+    Preferences prefs;
+    if (!prefs.begin("vannow_replay", false)) {
+        return;
+    }
+    char keyInit[16];
+    char keySeq[16];
+    char keyBmp[16];
+    snprintf(keyInit, sizeof(keyInit), "r%u_init", remoteId);
+    snprintf(keySeq, sizeof(keySeq), "r%u_seq", remoteId);
+    snprintf(keyBmp, sizeof(keyBmp), "r%u_bmp", remoteId);
+    prefs.putBool(keyInit, true);
+    prefs.putUInt(keySeq, maxSeq);
+    prefs.putULong64(keyBmp, bitmap);
+    prefs.end();
 }

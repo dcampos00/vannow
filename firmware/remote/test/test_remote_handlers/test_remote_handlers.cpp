@@ -37,7 +37,9 @@ void test_button_handler_click(void) {
     // Release button (HIGH)
     ArduinoMock::setPinState(10, HIGH);
     ArduinoMock::advanceMillis(15); // Release debounce
-    TEST_ASSERT_TRUE(btn.checkEvent(action)); // Call at t=40: Pressed -> Idle, returns Click
+    TEST_ASSERT_FALSE(btn.checkEvent(action)); // Pressed -> WaitDoubleClick
+    ArduinoMock::advanceMillis(320);
+    TEST_ASSERT_TRUE(btn.checkEvent(action)); // Double-click window expired -> Click
     TEST_ASSERT_EQUAL(ActionType::Click, action);
 }
 
@@ -256,6 +258,50 @@ void test_binary_matrix_hold_and_release(void) {
     TEST_ASSERT_EQUAL(ActionType::Release, action);
 }
 
+void test_button_handler_double_click(void) {
+    ButtonHandler btn(10, 0);
+    btn.begin();
+    ArduinoMock::setPinState(10, HIGH);
+    ActionType action;
+
+    ArduinoMock::setPinState(10, LOW);
+    btn.checkEvent(action);
+    ArduinoMock::advanceMillis(25);
+    btn.checkEvent(action);
+
+    ArduinoMock::setPinState(10, HIGH);
+    ArduinoMock::advanceMillis(15);
+    TEST_ASSERT_FALSE(btn.checkEvent(action));
+
+    ArduinoMock::setPinState(10, LOW);
+    TEST_ASSERT_FALSE(btn.checkEvent(action));
+    ArduinoMock::advanceMillis(15);
+    TEST_ASSERT_TRUE(btn.checkEvent(action));
+    TEST_ASSERT_EQUAL(ActionType::DoubleClick, action);
+}
+
+void test_button_handler_latching_edges(void) {
+    ButtonHandler sw(8, 0, ButtonHandler::InputMode::Latching);
+    sw.begin();
+    ArduinoMock::setPinState(8, HIGH);
+    ActionType action;
+
+    ArduinoMock::setPinState(8, LOW);
+    TEST_ASSERT_FALSE(sw.checkEvent(action));
+    ArduinoMock::advanceMillis(15);
+    TEST_ASSERT_TRUE(sw.checkEvent(action));
+    TEST_ASSERT_EQUAL(ActionType::Click, action);
+
+    TEST_ASSERT_FALSE(sw.checkEvent(action));
+    ArduinoMock::advanceMillis(200);
+    TEST_ASSERT_FALSE(sw.checkEvent(action));
+
+    ArduinoMock::setPinState(8, HIGH);
+    ArduinoMock::advanceMillis(15);
+    TEST_ASSERT_TRUE(sw.checkEvent(action));
+    TEST_ASSERT_EQUAL(ActionType::Click, action);
+}
+
 int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(test_button_handler_click);
@@ -267,6 +313,8 @@ int main(int argc, char **argv) {
     RUN_TEST(test_power_manager_sleep_execution);
     RUN_TEST(test_binary_matrix_click);
     RUN_TEST(test_binary_matrix_hold_and_release);
+    RUN_TEST(test_button_handler_double_click);
+    RUN_TEST(test_button_handler_latching_edges);
     return UNITY_END();
 }
 

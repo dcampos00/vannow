@@ -81,3 +81,21 @@ bool AntiReplayFilter::isInitialized(uint8_t remoteId) const {
     if (remoteId == 0 || remoteId > MAX_REMOTES) return false;
     return _remotes[remoteId - 1].initialized;
 }
+
+bool AntiReplayFilter::exportState(uint8_t remoteId, uint32_t& maxSeq, uint64_t& windowBitmap, bool& initialized) const {
+    if (remoteId == 0 || remoteId > MAX_REMOTES) return false;
+    const RemoteState& state = _remotes[remoteId - 1];
+    maxSeq = state.maxSeq;
+    windowBitmap = state.windowBitmap;
+    initialized = state.initialized;
+    return true;
+}
+
+bool AntiReplayFilter::importState(uint8_t remoteId, uint32_t maxSeq, uint64_t windowBitmap, bool initialized) {
+    if (remoteId == 0 || remoteId > MAX_REMOTES) return false;
+    RemoteState& state = _remotes[remoteId - 1];
+    state.maxSeq = maxSeq;
+    state.windowBitmap = windowBitmap;
+    state.initialized = initialized;
+    return true;
+}

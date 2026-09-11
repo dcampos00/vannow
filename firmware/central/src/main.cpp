@@ -81,6 +81,11 @@ void setup() {
     delay(1000);
     Serial.println("Starting VanNOW Central Controller...");
 
+#ifdef RGB_BUILTIN
+    // GPIO 38 (v1.1) / GPIO 48 (v1.0) are optocoupler outputs. Do not drive the DevKit WS2812.
+    pinMode(RGB_BUILTIN, INPUT);
+#endif
+
     // Initialize physical outputs, safety timers, and restore persisted states
     systemController.begin();
 
