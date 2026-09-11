@@ -2,6 +2,9 @@
 
 This document provides a single source of truth for the implementation status across all engineering domains of the VanNOW project: **Firmware & Protocols**, **Mechanical CAD & Enclosures**, **Hardware-as-Code Schematics (Atopile)**, and **Physical PCB Layout & Routing (KiCad)**.
 
+> [!WARNING]
+> **Not a fabrication release.** Critical 2026-09-11 FSM and pin-identity defects are fixed on `fix/logic-audit-2026-09-11` (see [`logic_audit_2026-09-11.md`](logic_audit_2026-09-11.md)). Remaining before order: Gerbers/CPL, Phoenix 6 A vs pump inrush, DevKit RGB on GPIO 38/48, and MAC/key provisioning. Flash **24-channel firmware only** on the 180×110 mm `profet_24ch` carrier.
+
 ---
 
 ## 1. System Readiness Matrix
@@ -18,12 +21,12 @@ This document provides a single source of truth for the implementation status ac
 
 ### 2.1 Firmware & Wireless Protocol
 - **Overall Status:** 100% Complete & Verified.
-- **Unit Test Suite:** 28/28 unit tests passing:
-  - Central tests: 19/19 tests passing (`pio test -d firmware/central -e native`).
-  - Remote tests: 9/9 tests passing (`pio test -d firmware/remote -e native`).
+- **Unit Test Suite:** 36/36 unit tests passing:
+  - Central tests: 25/25 tests passing (`pio test -d firmware/central -e native`).
+  - Remote tests: 11/11 tests passing (`pio test -d firmware/remote -e native`).
 - **Target Hardware Builds:** 100% passing:
-  - Central unit: Compiles cleanly for `esp32-s3-devkitc-1` with zero warnings (13.9% RAM, 28.0% Flash).
-  - Remote unit: Compiles cleanly for `seeed_xiao_esp32c6` with zero warnings.
+  - Central unit: Compiles for `esp32-s3-devkitc-1`.
+  - Remote unit: `seeed_xiao_esp32c6` (entrance) and `cockpit_xiao_esp32c6` (dash hub).
 - **Key Features Implemented:**
   - Non-blocking state machines: Short-press click, Long-press hold dimmer with 150 ms keep-alive, DoubleClick.
   - 5-Minute Timed Shower Mode for Channel 4 (Water Pump) with two-chirp buzzer acoustic pattern and 3-pulse LED feedback.
@@ -45,8 +48,9 @@ This document provides a single source of truth for the implementation status ac
   - Rear Body (`remote_enclosure_body.step / .stl`): 86 mm × 86 mm × 18 mm, 4x cardinal N52 magnet recesses (dia 10.3 mm × 2.1 mm), 4x corner M2.5 heat-set bosses, 4x PCB standoffs at (±30 mm, ±30 mm), 2x AA battery cavity (60 mm × 31 mm).
   - Faceplate (`remote_enclosure_faceplate.step / .stl`): 86 mm × 86 mm × 3.8 mm, 6x chamfered 12.2 mm pushbutton apertures, recessed dial bezel (dia 18 mm) for EC11 rotary knob, dia 2 mm micro-LED light dispersion cone.
   - Magnetic Docking Cradle (`remote_magnetic_cradle.step / .stl`): 96 mm × 96 mm × 11 mm, 45° lead-in chamfer, dual ergonomic extraction scallops, wall-mounting screw wells.
-- **Cockpit Hub Enclosure:**
-  - Pending: Model compact 3D housing in `generate_enclosures.py` to protect the cockpit PCB behind the dashboard.
+- **Cockpit Hub Enclosure (`hardware/enclosures/`):**
+  - Base (`cockpit_enclosure_base.step / .stl`): 108 mm × 58 mm × 17.8 mm, dual M4 chassis ears, 4x M3 PCB standoffs (48 mm × 38 mm pitch), 4x corner M3 lid bosses, North switch harness slot (40 mm × 8 mm), South power entry slot (12 mm × 8 mm).
+  - Lid (`cockpit_enclosure_lid.step / .stl`): 76 mm × 58 mm × 10 mm, stepped groove rim, 4x M3 counterbored holes (1.7 mm shoulder), dia 2.5 mm status LED aperture with conical light funnel. Verified 0.0 mm³ geometric clash against `cockpit_pcb.step`.
 
 ### 2.3 Hardware-as-Code & Schematics (Atopile)
 - **Overall Status:** 100% Complete & Compiling.
@@ -99,7 +103,7 @@ This document provides a single source of truth for the implementation status ac
 | **P3** | Entrance Remote 3D Raytracing | `hardware/entrance-remote-pcb/` | 🟢 Complete | STEP solid CAD + 3x 1080p raytraced renders in `renders/` |
 | **P4** | Cockpit Hub PCB Placement | `hardware/cockpit-pcb/` | 🟢 Complete | 55×45 mm outline, 4x M3 holes, 29 footprints, 0 collisions |
 | **P5** | Cockpit Hub Routing, DRC & 3D | `hardware/cockpit-pcb/` | 🟢 Complete | 0 DRC violations, 0 unconnected, STEP + 3x 1080p renders |
-| **P6** | Cockpit Hub Enclosure CAD | `hardware/enclosures/scripts/` | ⚪ Pending | Add `build_cockpit_enclosure()` to `generate_enclosures.py` |
+| **P6** | Cockpit Hub Enclosure CAD | `hardware/enclosures/` | 🟢 Complete | STEP/STL exported, Z-buffer rendered, 0.0 mm³ ECAD clash |
 | **P7** | Central PCB Header Alignment | `hardware/central-pcb/` | 🟢 Complete | J7/J8 headers aligned at 25.4mm pitch (standard DevKit footprint) |
 | **P8** | Central PCB Power & Signal Routing | `hardware/central-pcb/` | 🟢 Complete | 0 DRC violations, 0 unconnected items across both F.Cu & B.Cu |
 | **P9** | Central PCB 3D Render & Verification | `hardware/central-pcb/` | 🟢 Complete | 3x 1440p raytraced renders, STEP solid export, 0-clash MCAD verified |

@@ -50,7 +50,7 @@ This repository follows strict software development guidelines. When working on 
 Before implementing firmware modifications or hardware schematic revisions, agents MUST consult the relevant authoritative specifications in `docs/` (or the master navigation hub in [`docs/README.md`](docs/README.md)):
 
 ### 1. Mandatory Pre-Implementation Reading
-- **Hardware & Electrical Constraints:** [`docs/logic_audit_2026-09-03.md`](docs/logic_audit_2026-09-03.md) (Mandatory audit: details 7 critical fixes including ESP32-S3 pinout socket inversions, BTS5008 200 Hz PWM limits, and ADC divider Zener leakage).
+- **Hardware & Electrical Constraints:** [`docs/logic_audit_2026-09-11.md`](docs/logic_audit_2026-09-11.md) (Active audit: 11ch vs 24ch identity split, Shower Mode keep-alive oscillation, encoder dual-dispatch, XIAO D10/GPIO9). Historical closed blockers: [`docs/logic_audit_2026-09-03.md`](docs/logic_audit_2026-09-03.md) (DevKit socket short, 5 kHz PWM, Zener leakage).
 - **Physical Safety & Inductive Loads:** [`docs/analisis_critico_riesgos.md`](docs/analisis_critico_riesgos.md) (1N5408 pump flyback, PC817 diesel heater & fridge compressor control, external ON-OFF-AUTO bypass toggles).
 - **Firmware Architecture & State Machines:** [`docs/firmware_documentation.md`](docs/firmware_documentation.md) (Unified specification of classes, FSMs, 200 Hz LEDC PWM, and binary matrix decoding).
 - **Mechanical & Spatial Clearances:** [`docs/mechanical_and_enclosure_specs.md`](docs/mechanical_and_enclosure_specs.md) (230x190x85 mm cabinet envelope, 50 mm wiring drop, magnetic dockable remote retention).
@@ -72,7 +72,8 @@ Before implementing firmware modifications or hardware schematic revisions, agen
 | | [`docs/opciones_encoders_bajo_perfil.md`](docs/opciones_encoders_bajo_perfil.md) | 5 mm low-profile encoder hardware selection |
 | | [`docs/lista_compras_prototipo.md`](docs/lista_compras_prototipo.md) | Breadboard prototype bill of materials & wiring guide |
 | | [`docs/references/`](docs/references/) | Component datasheets (PROFETs, MOSFETs, XIAO, ESP32) |
-| **Audits & Verification** | [`docs/logic_audit_2026-09-03.md`](docs/logic_audit_2026-09-03.md) | **Active Audit:** 7 critical flaws in hardware & firmware |
+| **Audits & Verification** | [`docs/logic_audit_2026-09-11.md`](docs/logic_audit_2026-09-11.md) | **Active Audit:** cross-domain identity split, FSM defects, residual electrical issues |
+| | [`docs/logic_audit_2026-09-03.md`](docs/logic_audit_2026-09-03.md) | Historical: 7 critical flaws (DevKit short, replay bypass, 5 kHz PWM) — closed |
 | | [`docs/auditoria_logica_2026-07-11.md`](docs/auditoria_logica_2026-07-11.md) | Baseline audit (historical context & pinout evolution) |
 | | [`docs/analisis_critico_riesgos.md`](docs/analisis_critico_riesgos.md) | Automotive safety, inductive spikes & manual bypass |
 | **Feasibility & Budgets** | [`docs/eficiencia_energetica.md`](docs/eficiencia_energetica.md) | Standby energy budget (0.15 W vs 10–15 W Home Assistant) |
@@ -82,8 +83,11 @@ Before implementing firmware modifications or hardware schematic revisions, agen
 
 ### 3. Engineering Skills & Design Standards
 - **Schematic & PCB Design:** [`.agents/skills/schematic-design/SKILL.md`](.agents/skills/schematic-design/SKILL.md) (Automotive 12V power entry, PROFET switching, ADC clamping, Atopile Hardware-as-Code assertions).
+- **Procedural PCB Layout & Routing:** [`.agents/skills/pcb-layout-automation/SKILL.md`](.agents/skills/pcb-layout-automation/SKILL.md) (KiCad pcbnew Python automation, IPC-2152 automotive trace sizing, thermal via arrays, headless DRC zero-violation gate).
+- **Embedded Firmware & Testing:** [`.agents/skills/esp32-firmware-engineering/SKILL.md`](.agents/skills/esp32-firmware-engineering/SKILL.md) (ESP32-S3 Central & ESP32-C6 Remotes, 200 Hz PROFET PWM, ESP-NOW sliding-window anti-replay, LP-GPIO sleep wakeups, PlatformIO native mock testing).
 - **PCB 3D Rendering & CAD Export:** [`.agents/skills/pcb-rendering/SKILL.md`](.agents/skills/pcb-rendering/SKILL.md) (Headless KiCad raytracing, isometric perspective with floor shadows, populated 3D STEP solid export, and ECAD/MCAD clash detection in build123d).
 - **Parametric 3D CAD & Mesh Verification:** [`.agents/skills/parametric-cad-enclosures/SKILL.md`](.agents/skills/parametric-cad-enclosures/SKILL.md) (build123d Code-as-CAD, heat-set fastener sizing, stepped joints, ergonomic extraction, and headless software Z-buffer rendering).
+- **Cross-Domain Co-Design Synchronization:** [`.agents/skills/cross-domain-sync/SKILL.md`](.agents/skills/cross-domain-sync/SKILL.md) (Atopile netlist ↔ KiCad layout ↔ Firmware GPIOs ↔ Parametric CAD apertures verification matrix).
 
 > [!NOTE]
 > All new documentation and code must be authored in English per the directive in this file. Legacy Spanish documents remain authoritative for system logic unless explicitly superseded.

@@ -116,12 +116,12 @@ DASHBOARD INTERFACE ARCHITECTURE:
 
 | Channel | Dashboard Switch Target | Load Controlled at Central | Action |
 | :---: | :--- | :--- | :--- |
-| **SW1** | **Exterior Auxiliary Lights** | Aux 1 / Awning (BTS5008 PROFET) | Click: Toggle ON / OFF |
-| **SW2** | **Victron Orion-XS DC-DC** | Channel 10 (Optocoupler Remote Enable) | Click: Force Enable / Disable Charger |
-| **SW3** | **Cabin Interior Lights** | Zone 1 Main Ceiling (200 Hz LEDC) | Click: Toggle ON / OFF |
-| **SW4** | **Water Pump (Seaflo)** | Channel 4 (BTS5008 PROFET + Flyback) | Click: Toggle ON / OFF (10-min safety timer) |
-| **SW5** | **Inverter (Multiplus II)** | Channel 9 (Optocoupler Remote Switch) | Click: Toggle AC Inverter ON / OFF |
-| **SW6** | **Master Driving Mode** | Central Controller Safety Logic | Click: Shuts down living area lights & pumps |
+| **SW1** | **Exterior Auxiliary Lights** | Channel 5 Exterior Driver (BTS5008) | Edge Click: Toggle ON / OFF |
+| **SW2** | **Victron Orion-XS DC-DC #1** | Channel 15 (PC817 remote enable) | Edge Click: Enable / Disable charger |
+| **SW3** | **Cabin Interior Lights** | Channel 0 Zone 1 (200 Hz LEDC) | Edge Click: Toggle ON / OFF |
+| **SW4** | **Water Pump (Seaflo)** | Channel 4 (BTS5008 + flyback) | Edge Click: Toggle (10-min failsafe) |
+| **SW5** | **Inverter (Multiplus II)** | Channel 14 (PC817 remote switch) | Edge Click: Toggle AC inverter |
+| **SW6** | **Maxxair Fan Power** | Channel 8 (BTS5008 12 V cut) | Edge Click: Toggle fan standby power |
 
 ---
 
@@ -203,7 +203,7 @@ The entrance remote incorporates both the 6 tactile push buttons (diode-ORed to 
 - **D7 (GPIO 17):** Sense Button 5 (Water Pump).
 - **D8 (GPIO 19):** Sense Button 6 (Master Night Shutdown).
 - **D9 (GPIO 20):** Sense Encoder Push Button.
-- **D10 (GPIO 9):** Status Micro-LED (Green/Red feedback for ESP-NOW ACK).
+- **D10 (GPIO 18):** Status Micro-LED (ESP-NOW ACK). GPIO 9 is the BOOT strap and is not used.
 
 ### 4.3 Timed Water Pump Shower Mode & User Notification
 To conserve fresh water and prevent grey water overflows, the water pump incorporates a dedicated **Shower Mode** (default 5 minutes = 300 seconds with NVS persistence):
@@ -212,7 +212,7 @@ To conserve fresh water and prevent grey water overflows, the water pump incorpo
   - Single Click operates as standard ON/OFF toggle (backed by the 10-minute flood failsafe).
   - Pressing the button at any time during the 5 minutes immediately cancels and turns the pump OFF.
 * **Dual Feedback & Notification System:**
-  1. **Visual Remote Feedback:** The status Micro-LED on the remote panel (GPIO 9) flashes **3 rapid pulses (80 ms ON / 80 ms OFF)** upon initiating Shower Mode.
+  1. **Visual Remote Feedback:** The status Micro-LED on the remote panel (GPIO 18 / D10) flashes **3 rapid pulses (80 ms ON / 80 ms OFF)** upon initiating Shower Mode.
   2. **Hydraulic / Acoustic Pump Chirp:** The central controller pulses the pump twice (**150 ms ON, 120 ms OFF, 150 ms ON, 120 ms OFF**) before entering steady flow. The mechanical pressure bump creates an audible confirmation through the camper plumbing lines, informing anyone inside the shower stall that the timer is active.
 * **NVS Persistence:** The timer duration is persisted in NVS namespace `vannow_state`, key `pump_shower_ms` (configurable programmatically or via serial/web).
 
