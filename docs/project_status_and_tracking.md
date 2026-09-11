@@ -18,8 +18,8 @@ This document provides a single source of truth for the implementation status ac
 
 ### 2.1 Firmware & Wireless Protocol
 - **Overall Status:** 100% Complete & Verified.
-- **Unit Test Suite:** 24/24 unit tests passing:
-  - Central tests: 15/15 tests passing (`pio test -d firmware/central -e native`).
+- **Unit Test Suite:** 28/28 unit tests passing:
+  - Central tests: 19/19 tests passing (`pio test -d firmware/central -e native`).
   - Remote tests: 9/9 tests passing (`pio test -d firmware/remote -e native`).
 - **Target Hardware Builds:** 100% passing:
   - Central unit: Compiles cleanly for `esp32-s3-devkitc-1` with zero warnings.
@@ -28,8 +28,10 @@ This document provides a single source of truth for the implementation status ac
   - Non-blocking state machines: Short-press click, Long-press hold dimmer with 150 ms keep-alive, DoubleClick.
   - 5-Minute Timed Shower Mode for Channel 4 (Water Pump) with two-chirp buzzer acoustic pattern and 3-pulse LED feedback.
   - Non-volatile storage (NVS) persistence via ESP-IDF Preferences API for lighting levels, channel states, and shower timer configurations.
-  - ESP-NOW encrypted mesh protocol with monotonic anti-replay sequence validation and MAC allow-listing.
-  - Rotary encoder "Active-on-Demand" 1.5s timeout logic with LP-GPIO wakeups.
+  - ESP-NOW encrypted mesh protocol with monotonic anti-replay sequence validation (RFC 6479) and provisioned MAC setting (`esp_wifi_set_mac`).
+  - Rotary encoder "Active-on-Demand" 1.5s timeout logic with high-frequency (> 3 kHz) Nyquist sampling and LP-GPIO wakeups.
+  - Parameterized `SystemController` architecture supporting up to 32 channels (Dimmable, Digital, MomentaryPulse) and decoupled remote mapping tables.
+  - Cold-boot safe deep sleep sequence guaranteeing active pull-ups on LP wake pins.
 
 ### 2.2 Mechanical CAD & 3D Enclosures
 - **Overall Status:** 80% Complete.
