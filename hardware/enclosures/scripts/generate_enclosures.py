@@ -189,6 +189,163 @@ def build_central_lid():
     return lid.part
 
 
+def build_central_24ch_base():
+    """Expanded 24-Channel Central Controller Enclosure - Base unit.
+    Features:
+      - Length: 205mm, Width: 135mm, Height: 52mm, Wall: 3.0mm, Floor: 3.5mm
+      - Fits within 230x190x85mm cabinet envelope: 205mm (X) x 179mm (Y with ears) x 55mm (Z with lid)
+      - Integrated dual Y-axis mounting ears with 4.5mm holes for M4 chassis/wall mounting
+      - Stepped perimeter alignment lip (+2.2mm high, 1.4mm wide) for positive lid interlock
+      - 4x Corner screw bosses integrated into walls with M3 heat-set insert pilot holes (dia 4.0mm x depth 6.0mm)
+      - 4x Reinforced PCB standoffs for 180x110mm board (170x100mm pitch) with M3 insert holes
+      - 6x PG9/PG11 cable gland ports (dia 16.0mm) with external reinforcing boss collars (dia 22.0mm)
+      - Convective ventilation louvers above PCB level
+    """
+    length = 205.0
+    width = 135.0
+    height = 52.0
+    wall = 3.0
+    floor = 3.5
+    lip_h = 2.2
+    lip_w = 1.4
+
+    with BuildPart() as base:
+        # 1. Base floor plate with unified mounting ears along Y-axis
+        with BuildSketch(Plane.XY) as s_floor:
+            RectangleRounded(length, width, 6.0)
+            # Top and bottom mounting ears along Y-axis (preserves X <= 205mm within 230mm envelope)
+            with Locations((0, -width / 2 - 11.0), (0, width / 2 + 11.0)):
+                RectangleRounded(70.0, 22.0, 4.0)
+                Circle(radius=2.25, mode=Mode.SUBTRACT)
+        extrude(amount=floor)
+
+        # 2. Main vertical walls
+        with BuildSketch(Plane.XY.offset(floor)) as s_walls:
+            RectangleRounded(length, width, 6.0)
+            RectangleRounded(length - 2 * wall, width - 2 * wall, max(0.1, 6.0 - wall), mode=Mode.SUBTRACT)
+        extrude(amount=height - floor)
+
+        # 3. Stepped perimeter mating lip on top rim
+        with BuildSketch(Plane.XY.offset(height)) as s_lip:
+            RectangleRounded(length - 2 * lip_w, width - 2 * lip_w, max(0.1, 6.0 - lip_w))
+            RectangleRounded(length - 2 * wall, width - 2 * wall, max(0.1, 6.0 - wall), mode=Mode.SUBTRACT)
+        extrude(amount=lip_h)
+
+        # 4. 4x Corner screw bosses integrated into wall corners
+        corner_dx = length / 2 - wall - 3.8
+        corner_dy = width / 2 - wall - 3.8
+        boss_h = height - floor
+        with Locations(
+            (-corner_dx, -corner_dy, floor),
+            (corner_dx, -corner_dy, floor),
+            (-corner_dx, corner_dy, floor),
+            (corner_dx, corner_dy, floor)
+        ):
+            Cylinder(radius=4.5, height=boss_h, align=(Align.CENTER, Align.CENTER, Align.MIN))
+            with Locations((0, 0, boss_h - 6.0)):
+                Cylinder(radius=2.0, height=6.5, align=(Align.CENTER, Align.CENTER, Align.MIN), mode=Mode.SUBTRACT)
+
+        # 5. 4x PCB Standoffs (170x100mm pitch, height 12mm)
+        pcb_dx = 170.0 / 2
+        pcb_dy = 100.0 / 2
+        standoff_h = 12.0
+        with Locations(
+            (-pcb_dx, -pcb_dy, floor),
+            (pcb_dx, -pcb_dy, floor),
+            (-pcb_dx, pcb_dy, floor),
+            (pcb_dx, pcb_dy, floor)
+        ):
+            Cylinder(radius=3.6, height=standoff_h, align=(Align.CENTER, Align.CENTER, Align.MIN))
+            with Locations((0, 0, standoff_h - 5.5)):
+                Cylinder(radius=2.0, height=6.0, align=(Align.CENTER, Align.CENTER, Align.MIN), mode=Mode.SUBTRACT)
+
+        # 6. 6x Cable Gland Ports on front wall
+        for x_pos in [-75.0, -45.0, -15.0, 15.0, 45.0, 75.0]:
+            port_z = floor + 18.0
+            with Locations((x_pos, -width / 2, port_z)):
+                Cylinder(radius=8.0, height=wall * 3, rotation=(90, 0, 0), mode=Mode.SUBTRACT)
+                with Locations((0, -1.1, 0)):
+                    Cylinder(radius=11.0, height=2.2, rotation=(90, 0, 0))
+                    Cylinder(radius=8.0, height=3.0, rotation=(90, 0, 0), mode=Mode.SUBTRACT)
+
+        # 7. Convective ventilation louvers on side walls
+        for x_side in [-length / 2, length / 2]:
+            for z_slot in [floor + 24.0, floor + 34.0]:
+                for y_slot in [-30.0, 0.0, 30.0]:
+                    with Locations((x_side, y_slot, z_slot)):
+                        Box(wall * 3, 20.0, 3.2, mode=Mode.SUBTRACT)
+
+    return base.part
+
+
+def build_central_24ch_lid():
+    """Expanded 24-Channel Central Controller Enclosure - Top Lid.
+    Features:
+      - Outer Dimensions: 205mm x 135mm x 20mm, Top Wall: 3.5mm, Side Wall: 3.0mm
+      - Perimeter mating groove (1.8mm wide x 2.4mm deep) on underside rim to seat base lip
+      - 4x Corner screw boss columns extending downward to contact base bosses
+      - 4x M3 Socket Head Counterbores
+      - 6x SPDT Toggle Switch mounting stations with anti-rotation keyways and recessed bezels
+    """
+    length = 205.0
+    width = 135.0
+    height = 20.0
+    wall = 3.0
+    top_wall = 3.5
+    lip_w = 1.8
+    lip_d = 2.4
+
+    with BuildPart() as lid:
+        # 1. Top ceiling plate
+        with BuildSketch(Plane.XY) as s_top:
+            RectangleRounded(length, width, 6.0)
+        extrude(amount=-top_wall)
+
+        # 2. Outer side walls extending downward
+        with BuildSketch(Plane.XY.offset(-top_wall)) as s_walls:
+            RectangleRounded(length, width, 6.0)
+            RectangleRounded(length - 2 * wall, width - 2 * wall, max(0.1, 6.0 - wall), mode=Mode.SUBTRACT)
+        extrude(amount=-(height - top_wall))
+
+        # 3. Stepped perimeter mating groove in bottom rim
+        with BuildSketch(Plane.XY.offset(-height)) as s_groove:
+            RectangleRounded(length - 2 * (wall - lip_w), width - 2 * (wall - lip_w), max(0.1, 6.0 - wall + lip_w))
+            RectangleRounded(length - 2 * wall, width - 2 * wall, max(0.1, 6.0 - wall), mode=Mode.SUBTRACT)
+        extrude(amount=lip_d, mode=Mode.SUBTRACT)
+
+        # 4. 4x Corner screw boss columns extending down from ceiling to meet base bosses
+        corner_dx = length / 2 - wall - 3.8
+        corner_dy = width / 2 - wall - 3.8
+        boss_h = height - top_wall
+        with Locations(
+            (-corner_dx, -corner_dy, -top_wall),
+            (corner_dx, -corner_dy, -top_wall),
+            (-corner_dx, corner_dy, -top_wall),
+            (corner_dx, corner_dy, -top_wall)
+        ):
+            Cylinder(radius=4.5, height=boss_h, align=(Align.CENTER, Align.CENTER, Align.MAX))
+
+        # 5. 4x Counterbored M3 screw holes
+        with Locations(
+            (-corner_dx, -corner_dy, 0),
+            (corner_dx, -corner_dy, 0),
+            (-corner_dx, corner_dy, 0),
+            (corner_dx, corner_dy, 0)
+        ):
+            Cylinder(radius=1.7, height=height + 2, align=(Align.CENTER, Align.CENTER, Align.MAX), mode=Mode.SUBTRACT)
+            Cylinder(radius=3.1, height=2.0, align=(Align.CENTER, Align.CENTER, Align.MAX), mode=Mode.SUBTRACT)
+
+        # 6. 6x SPDT Toggle Switch stations with anti-rotation keyways and protective bezels
+        for x_pos in [-60.0, -36.0, -12.0, 12.0, 36.0, 60.0]:
+            with Locations((x_pos, 0, 0)):
+                Cylinder(radius=8.0, height=1.0, align=(Align.CENTER, Align.CENTER, Align.MAX), mode=Mode.SUBTRACT)
+                Cylinder(radius=3.25, height=top_wall * 2, align=(Align.CENTER, Align.CENTER, Align.MAX), mode=Mode.SUBTRACT)
+                with Locations((0, 3.25, 0)):
+                    Box(1.2, 1.8, top_wall * 2, align=(Align.CENTER, Align.CENTER, Align.MAX), mode=Mode.SUBTRACT)
+
+    return lid.part
+
+
 def build_remote_body():
     """Remote Switch Panel - Rear Body Enclosure.
     Features:
@@ -395,6 +552,8 @@ def main():
     parts = {
         "central_enclosure_base": build_central_base(),
         "central_enclosure_lid": build_central_lid(),
+        "central_24ch_enclosure_base": build_central_24ch_base(),
+        "central_24ch_enclosure_lid": build_central_24ch_lid(),
         "remote_enclosure_body": build_remote_body(),
         "remote_enclosure_faceplate": build_remote_faceplate(),
         "remote_magnetic_cradle": build_magnetic_cradle(),
@@ -424,7 +583,7 @@ def main():
         print(f"    Solid Volume : {vol_cm3:.2f} cm³")
         print(f"    Exported     : {name}.step | {name}.stl")
 
-    print(f"\nAll 5 parametric models generated and exported successfully!")
+    print(f"\nAll {len(parts)} parametric models generated and exported successfully!")
 
 
 if __name__ == "__main__":

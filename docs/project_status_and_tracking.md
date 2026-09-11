@@ -8,7 +8,7 @@ This document provides a single source of truth for the implementation status ac
 
 | Domain / Board | Schematic & Logic (Atopile) | Board Outline & Placement | Copper Routing & Power Planes | DRC Status | 3D CAD & Enclosure | Firmware & Unit Tests | Production Readiness |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Central Controller (`central-pcb`)** | 100% (Passed) | 100% (150×95mm, M3 holes) | 100% (Procedural route) | 0 violations (Clean) | 100% (Zero clash, 32mm headroom) | 100% (15/15 tests pass) | **100% Complete / Ready** |
+| **Central Controller (`central-pcb`)** | 100% (Passed, 24Ch Target) | 100% (150×95mm / 180×110mm) | 100% (Procedural route) | 0 violations (Clean) | 100% (11ch & 24ch STEP/STL) | 100% (19/19 tests pass) | **100% Complete / Ready** |
 | **Master Entrance Remote (`entrance-remote-pcb`)** | 100% (Passed) | 100% (Exact apertures) | 100% (Procedural route) | 0 violations (Clean) | 100% (Body, Faceplate, Cradle) | 100% (9/9 tests pass) | **100% Complete / Ready** |
 | **Cockpit Hub (`cockpit-pcb`)** | 100% (Passed) | 100% (55×45mm, M3 holes) | 100% (Procedural route) | 0 violations (Clean) | STEP + 3D Raytraced Renders | 100% (Protocol mapped) | **100% Board Ready** |
 
@@ -22,7 +22,7 @@ This document provides a single source of truth for the implementation status ac
   - Central tests: 19/19 tests passing (`pio test -d firmware/central -e native`).
   - Remote tests: 9/9 tests passing (`pio test -d firmware/remote -e native`).
 - **Target Hardware Builds:** 100% passing:
-  - Central unit: Compiles cleanly for `esp32-s3-devkitc-1` with zero warnings.
+  - Central unit: Compiles cleanly for `esp32-s3-devkitc-1` with zero warnings (13.9% RAM, 28.0% Flash).
   - Remote unit: Compiles cleanly for `seeed_xiao_esp32c6` with zero warnings.
 - **Key Features Implemented:**
   - Non-blocking state machines: Short-press click, Long-press hold dimmer with 150 ms keep-alive, DoubleClick.
@@ -30,14 +30,17 @@ This document provides a single source of truth for the implementation status ac
   - Non-volatile storage (NVS) persistence via ESP-IDF Preferences API for lighting levels, channel states, and shower timer configurations.
   - ESP-NOW encrypted mesh protocol with monotonic anti-replay sequence validation (RFC 6479) and provisioned MAC setting (`esp_wifi_set_mac`).
   - Rotary encoder "Active-on-Demand" 1.5s timeout logic with high-frequency (> 3 kHz) Nyquist sampling and LP-GPIO wakeups.
-  - Parameterized `SystemController` architecture supporting up to 32 channels (Dimmable, Digital, MomentaryPulse) and decoupled remote mapping tables.
+  - Modular, Parameterized `SystemController` architecture supporting up to 32 channels (`Dimmable`, `Digital`, `MomentaryPulse`), default 24-channel configuration, and decoupled remote mapping tables.
+  - `PulseChannel` class for momentary non-latching pulses (e.g. Maxxair keypad power button simulation, generator start).
   - Cold-boot safe deep sleep sequence guaranteeing active pull-ups on LP wake pins.
 
 ### 2.2 Mechanical CAD & 3D Enclosures
-- **Overall Status:** 80% Complete.
-- **Central Controller Box (`hardware/enclosures/`):**
-  - Base (`central_enclosure_base.step / .stl`): 175 mm × 125 mm × 45 mm, integrated DIN/wall ears, 4x M3 heat-set bosses, 4x PCB standoffs (140 mm × 85 mm pitch), 4x PG9/11 cable gland ports, convective louvers.
-  - Lid (`central_enclosure_lid.step / .stl`): Stepped groove rim, 4x M3 counterbored holes, 6x SPDT toggle switch keyways for external manual emergency bypass.
+- **Overall Status:** 90% Complete.
+- **Central Controller Enclosures (`hardware/enclosures/`):**
+  - Standard 11Ch Base (`central_enclosure_base.step / .stl`): 175 mm × 125 mm × 45 mm, integrated DIN/wall ears, 4x M3 heat-set bosses, 4x PCB standoffs (140 mm × 85 mm pitch), 4x PG9/11 cable gland ports, convective louvers.
+  - Standard 11Ch Lid (`central_enclosure_lid.step / .stl`): Stepped groove rim, 4x M3 counterbored holes, 6x SPDT toggle switch keyways for external manual emergency bypass.
+  - Expanded 24Ch Base (`central_24ch_enclosure_base.step / .stl`): 205 mm × 135 mm × 52 mm (outer shell), Y-axis mounting ears (179 mm total width, perfectly within 230 × 190 mm cabinet envelope), 4x M3 standoffs (170 mm × 100 mm pitch), 6x PG9/11 gland collars, side convective louvers.
+  - Expanded 24Ch Lid (`central_24ch_enclosure_lid.step / .stl`): 205 mm × 135 mm × 20 mm, stepped groove rim, 4x M3 counterbored holes, 6x SPDT toggle switch stations.
 - **Master Entrance Remote & Wall Cradle (`hardware/enclosures/`):**
   - Rear Body (`remote_enclosure_body.step / .stl`): 86 mm × 86 mm × 18 mm, 4x cardinal N52 magnet recesses (dia 10.3 mm × 2.1 mm), 4x corner M2.5 heat-set bosses, 4x PCB standoffs at (±30 mm, ±30 mm), 2x AA battery cavity (60 mm × 31 mm).
   - Faceplate (`remote_enclosure_faceplate.step / .stl`): 86 mm × 86 mm × 3.8 mm, 6x chamfered 12.2 mm pushbutton apertures, recessed dial bezel (dia 18 mm) for EC11 rotary knob, dia 2 mm micro-LED light dispersion cone.

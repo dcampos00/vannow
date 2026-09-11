@@ -13,3 +13,8 @@ builds:
     entry: central.ato:VanCentralControllerModular
     paths:
       layout: ./layouts/modular
+  profet_24ch:
+    entry: central.ato:VanCentralController24Ch
+    paths:
+      layout: ./layouts/profet_24ch
+
