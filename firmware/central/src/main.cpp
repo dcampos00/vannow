@@ -28,6 +28,9 @@ static QueueHandle_t packetQueue = nullptr;
 SystemController systemController;
 WirelessManager wirelessManager;
 
+// Provisioned Central MAC address
+const uint8_t centralMac[6] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
+
 // Allow-listed Remote MAC addresses (must match actual remotes)
 const uint8_t remoteMacs[][6] = {
     {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0x11}, // Remote 1 (Entry Panel)
@@ -103,8 +106,8 @@ void setup() {
     Serial.printf("Task Watchdog Timer configured with %d second timeout.\n", WDT_TIMEOUT_SECONDS);
 #endif
 
-    // Initialize Wi-Fi and ESP-NOW via WirelessManager
-    if (!wirelessManager.begin()) {
+    // Initialize Wi-Fi and ESP-NOW via WirelessManager with provisioned MAC
+    if (!wirelessManager.begin(centralMac)) {
         Serial.println("Fatal: Error initializing wireless subsystem. Rebooting...");
         delay(2000);
         ESP.restart();

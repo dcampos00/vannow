@@ -10,8 +10,8 @@ class WirelessManager {
 public:
     WirelessManager();
 
-    // Initialize Wi-Fi in Station mode and initialize ESP-NOW. Returns true on success.
-    bool begin();
+    // Initialize Wi-Fi in Station mode and initialize ESP-NOW. Supports optional custom MAC. Returns true on success.
+    bool begin(const uint8_t* customMac = nullptr);
 
     // Register receiver callback (Central)
     bool registerReceiveCallback(esp_now_recv_cb_t callback);

@@ -3,6 +3,7 @@
 #ifdef ARDUINO_ARCH_ESP32
 #include <esp_now.h>
 #include <esp_wifi.h>
+#include <driver/gpio.h>
 #endif
 
 PowerManager::PowerManager(uint32_t inactivityTimeoutMs)
@@ -23,10 +24,14 @@ bool PowerManager::isExpired() const {
 void PowerManager::goToSleep(const uint8_t* wakeupPins, uint8_t pinCount) {
     Serial.println("Preparing for Deep Sleep...");
 
-    // Create the pin mask for EXT1 wake-up
+    // Create the pin mask for EXT1 wake-up and ensure solid pull-ups on all wake pins
     uint64_t pinMask = 0;
     for (uint8_t i = 0; i < pinCount; i++) {
         pinMask |= (1ULL << wakeupPins[i]);
+        pinMode(wakeupPins[i], INPUT_PULLUP);
+#if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_LINUX)
+        gpio_pullup_en((gpio_num_t)wakeupPins[i]);
+#endif
     }
 
     // Enable wake-up on any specified pins going LOW (button switch press)

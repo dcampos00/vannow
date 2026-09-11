@@ -3,10 +3,14 @@
 
 WirelessManager::WirelessManager() {}
 
-bool WirelessManager::begin() {
+bool WirelessManager::begin(const uint8_t* customMac) {
     // 1. Initialize Wi-Fi in Station mode
     WiFi.mode(WIFI_STA);
     WiFi.disconnect();
+
+    if (customMac != nullptr) {
+        esp_wifi_set_mac(WIFI_IF_STA, customMac);
+    }
 
     // Set Wi-Fi channel to fixed channel 1 (FR-01)
     esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);

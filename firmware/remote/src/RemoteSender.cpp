@@ -20,12 +20,14 @@ void RemoteSender::OnDataSent(const wifi_tx_info_t *tx_info, esp_now_send_status
     _messageSent = true;
 }
 
-bool RemoteSender::begin() {
-    // Initialize battery reading pin
-    pinMode(_batteryPin, INPUT);
+bool RemoteSender::begin(const uint8_t* customMac) {
+    // Initialize battery reading pin if assigned
+    if (_batteryPin != 255) {
+        pinMode(_batteryPin, INPUT);
+    }
 
-    // Initialize wireless manager
-    if (!_wireless.begin()) {
+    // Initialize wireless manager with optional provisioned MAC
+    if (!_wireless.begin(customMac)) {
         Serial.println("Error initializing wireless manager");
         return false;
     }
@@ -47,6 +49,9 @@ bool RemoteSender::begin() {
 }
 
 float RemoteSender::readBatteryVoltage() {
+    if (_batteryPin == 255) {
+        return 3.0f; // Default nominal 2x AA battery voltage
+    }
     int raw = analogRead(_batteryPin);
     // Seeed Studio XIAO ESP32-C6 defaults to 12-bit ADC (0-4095) with ~3.3V reference
     float adcVoltage = (raw / 4095.0f) * 3.3f;

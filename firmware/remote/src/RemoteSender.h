@@ -10,7 +10,7 @@ public:
     RemoteSender(uint8_t remoteId, const uint8_t* targetMac, uint8_t batteryPin);
 
     // Initialize inputs, Wi-Fi, ESP-NOW, and target peer
-    bool begin();
+    bool begin(const uint8_t* customMac = nullptr);
 
     // Pack and send action packet to the target peer
     bool send(ActionType action, uint8_t buttonIndex, int8_t rotationSteps);
