@@ -85,6 +85,12 @@ To ensure layouts achieve 0 DRC violations, 0 unconnected items, and 0 warnings 
 11. **High-Current Power Bus & Sensing Partitioning:**
     Route high-current power distribution tracks (e.g., 12V motor/fan/PROFET feeds) through dedicated peripheral corridors (such as open inter-stage channels between smart switch tabs) rather than perimeter board edges near connectors and sensing passives. Orient multi-terminal passive components (voltage dividers, filter capacitors) so that all high-voltage sensing pads face one direction (e.g. North) and all lower-voltage divider/ground pads face the opposite direction (e.g. South). This physically isolates high-voltage feeds from intermediate low-voltage nodes.
 
+12. **Multi-Tier Corridor Routing & Order-Dependent Turn Branching (Branch-Off First Rule):**
+    When parallel highway traces route across an open board corridor (e.g., south of a microcontroller header) towards a bank of peripheral switches, order the parallel tracks such that the signal reaching its target earliest is on the innermost track (closest to the turn direction). When tracks peel off at 90°, an inner track turns without crossing outer tracks, while outer tracks continue straight unimpeded. If an outer track must cross an inner track, transition the turn to the opposite copper layer to ensure 100% planar isolation without crossing errors.
+
+13. **High-Density Ground Pour Island Elimination:**
+    In dense 2-layer layouts with extensive control line routing, tight bundles of signal and feedback traces can completely partition top or bottom copper pours into isolated islands. Any component ground pins (e.g., PROFET logic ground pins) enclosed within such partitioned areas will be severed from the main ground plane, triggering `[unconnected_items]` DRC violations. Systematically place dedicated GND stitching vias inside each bounded pocket to anchor local ground returns directly into the opposite continuous ground plane.
+
 ---
 
 ### Step 1: Pre-Render Layout Sanity Checks

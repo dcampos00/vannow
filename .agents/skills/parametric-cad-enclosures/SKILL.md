@@ -17,11 +17,11 @@ This skill provides an authoritative, production-grade methodology for modeling 
 
 1. **Watertight Manifold Topology First:** Construct 3D bodies from clean, continuous 2D sketches (`BuildSketch` + `RectangleRounded` / `SlotOverall`) extruded into solids. Avoid fragile post-hoc fillets or hollow shells generated via global `offset()` on complex geometry.
 2. **Fastener Land & Shoulder Integrity:** Never allow a counterbore to punch through or dangerously thin a mounting wall. Always enforce:
-   $$\text{Wall Thickness} - \text{Counterbore Depth} \ge \text{Clamping Shoulder} \ge 1.5\,\text{mm}$$
+   Wall Thickness - Counterbore Depth ≥ Clamping Shoulder ≥ 1.5 mm
 3. **Dedicated Spatial Isolation:** Never overlap structural features. PCB standoffs and magnet pockets must have dedicated, non-colliding XY coordinates and guaranteed floor backing:
-   $$\text{Floor Thickness} - \text{Magnet Pocket Depth} \ge 1.2\,\text{mm}$$
-4. **Interlocking Stepped Joints:** Every two-part enclosure (base + lid or body + faceplate) must feature an interlocking stepped perimeter flange (tongue-and-groove) with appropriate 3D printing or injection molding clearance ($0.2\,\text{mm} \text{ to } 0.4\,\text{mm}$) to prevent lateral shear, dust ingress, and light/EMI bleed.
-5. **Ergonomic Extraction Mechanics:** Any device held in a docking cradle by magnetic force ($F \ge 10\,\text{N}$) MUST provide dual finger/thumb extraction scallops so users can securely pinch and remove the unit without tools.
+   Floor Thickness - Magnet Pocket Depth ≥ 1.2 mm
+4. **Interlocking Stepped Joints:** Every two-part enclosure (base + lid or body + faceplate) must feature an interlocking stepped perimeter flange (tongue-and-groove) with appropriate 3D printing or injection molding clearance (0.2 mm to 0.4 mm) to prevent lateral shear, dust ingress, and light/EMI bleed.
+5. **Ergonomic Extraction Mechanics:** Any device held in a docking cradle by magnetic force (F ≥ 10 N) MUST provide dual finger/thumb extraction scallops so users can securely pinch and remove the unit without tools.
 
 ---
 
@@ -61,12 +61,12 @@ In OpenCASCADE (`build123d` / CadQuery), joining separate 3D blocks and then cal
 ### 2. Fasteners, Screw Bosses & Heat-Set Inserts
 Threaded fasteners in plastic must never thread directly into bare PLA/ABS/PETG. Use **brass threaded heat-set inserts** (Ruthex / McMaster):
 
-| Thread Size | Outer Diameter ($D_{insert}$) | Recommended Pilot Hole ($D_{pilot}$) | Minimum Insert Depth ($H_{hole}$) | Boss Outer Diameter ($D_{boss}$) |
+| Thread Size | Outer Diameter (D_insert) | Recommended Pilot Hole (D_pilot) | Minimum Insert Depth (H_hole) | Boss Outer Diameter (D_boss) |
 | :--- | :--- | :--- | :--- | :--- |
-| **M2** | $3.2\,\text{mm}$ | $3.0 - 3.1\,\text{mm}$ | $4.0\,\text{mm}$ | $5.0\,\text{mm}$ |
-| **M2.5** | $3.6\,\text{mm}$ | $3.4 - 3.5\,\text{mm}$ | $4.5\,\text{mm}$ | $6.0\,\text{mm}$ |
-| **M3** | $4.2\,\text{mm}$ | $4.0 - 4.1\,\text{mm}$ | $5.5 - 6.0\,\text{mm}$ | $7.5 - 8.5\,\text{mm}$ |
-| **M4** | $5.6\,\text{mm}$ | $5.2 - 5.4\,\text{mm}$ | $7.5 - 8.0\,\text{mm}$ | $10.0 - 11.0\,\text{mm}$ |
+| **M2** | 3.2 mm | 3.0 - 3.1 mm | 4.0 mm | 5.0 mm |
+| **M2.5** | 3.6 mm | 3.4 - 3.5 mm | 4.5 mm | 6.0 mm |
+| **M3** | 4.2 mm | 4.0 - 4.1 mm | 5.5 - 6.0 mm | 7.5 - 8.5 mm |
+| **M4** | 5.6 mm | 5.2 - 5.4 mm | 7.5 - 8.0 mm | 10.0 - 11.0 mm |
 
 * **Boss Gusseting:** Always tie tall corner bosses into the adjacent enclosure walls with triangular fillets or webs to prevent snapping under screw torque.
 * Detailed Guide: [enclosure_design_rules.md](./references/enclosure_design_rules.md)
@@ -74,7 +74,7 @@ Threaded fasteners in plastic must never thread directly into bare PLA/ABS/PETG.
 ---
 
 ### 3. Avoiding the `build123d` Global Plane-Reset Trap
-Passing a global plane constant (such as `Plane.XZ`, `Plane.YZ`, or `Plane.XY`) into `BuildSketch()` **resets the sketch origin to $(0, 0, 0)$**, completely discarding any enclosing `with Locations(...)` scope!
+Passing a global plane constant (such as `Plane.XZ`, `Plane.YZ`, or `Plane.XY`) into `BuildSketch()` **resets the sketch origin to (0, 0, 0)**, completely discarding any enclosing `with Locations(...)` scope!
 
 ```python
 # ❌ BUG: Sketch origin resets to (0, 0, 0) on the XZ plane!
@@ -100,8 +100,8 @@ Standard Matplotlib 3D (`mplot3d` / `Poly3DCollection`) sorts faces solely by ce
 
 * **Production Verification Requirement:** Always verify STL meshes using a pure **software Z-buffer rasterizer** with:
   1. Backface culling in screen space (`cross2d < 0`).
-  2. Per-pixel depth testing ($Z_{frag} < Z_{buffer}[y, x]$).
-  3. Directional three-point Blinn-Phong lighting with positive $Z_{cam}$ light vectors.
+  2. Per-pixel depth testing (Z_frag < Z_buffer[y, x]).
+  3. Directional three-point Blinn-Phong lighting with positive Z_cam light vectors.
   4. Subtle CAD feature crease lines (`angles > 30°`) depth-tested against the buffer.
 * Detailed Guide: [mesh_rendering_and_verification.md](./references/mesh_rendering_and_verification.md)
 
@@ -113,8 +113,8 @@ Before releasing CAD models or generating production fabrication files, verify:
 
 - [ ] **Watertight Manifold Solid:** `part.is_valid == True` and `mesh.is_watertight == True`.
 - [ ] **Z-Coordinate Clearance:** No negative-Z protrusions into mounting surfaces or floors.
-- [ ] **Floor Backing:** Magnet pockets and blind standoff holes leave $\ge 1.2\,\text{mm}$ of solid plastic backing.
-- [ ] **Counterbore Clamping Shoulder:** Counterbored screw heads leave $\ge 1.5\,\text{mm}$ of solid material.
-- [ ] **Stepped Perimeter Joint:** Interlocking lip and groove present with $0.2\,\text{mm}$ to $0.4\,\text{mm}$ clearance.
+- [ ] **Floor Backing:** Magnet pockets and blind standoff holes leave ≥ 1.2 mm of solid plastic backing.
+- [ ] **Counterbore Clamping Shoulder:** Counterbored screw heads leave ≥ 1.5 mm of solid material.
+- [ ] **Stepped Perimeter Joint:** Interlocking lip and groove present with 0.2 mm to 0.4 mm clearance.
 - [ ] **Thermal & Cable Ports:** Glands have clearance for locknuts; heat sources have convective vent slots.
-- [ ] **Extraction Ergonomics:** Magnetic cradles have finger/thumb grip notches ($\ge 14\,\text{mm}$ radius).
+- [ ] **Extraction Ergonomics:** Magnetic cradles have finger/thumb grip notches (≥ 14 mm radius).
