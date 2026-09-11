@@ -535,6 +535,192 @@ void test_shower_mode_nvs_configuration(void) {
     }
 }
 
+void test_pulse_channel(void) {
+    PulseChannel pulse("MaxxairPulse", 47, 250); // 250 ms momentary pulse
+    pulse.begin();
+
+    // Initial state must be LOW/inactive
+    TEST_ASSERT_FALSE(pulse.getState());
+    TEST_ASSERT_EQUAL(LOW, ArduinoMock::getPinState(47));
+    TEST_ASSERT_EQUAL(OUTPUT, ArduinoMock::getPinMode(47));
+    TEST_ASSERT_FALSE(pulse.shouldRestoreOnBoot());
+
+    // Trigger pulse via Click action
+    pulse.handleAction(ActionType::Click, 0);
+    TEST_ASSERT_TRUE(pulse.getState());
+    TEST_ASSERT_EQUAL(HIGH, ArduinoMock::getPinState(47));
+
+    // Advance 200 ms: still active
+    ArduinoMock::advanceMillis(200);
+    pulse.update();
+    TEST_ASSERT_TRUE(pulse.getState());
+    TEST_ASSERT_EQUAL(HIGH, ArduinoMock::getPinState(47));
+
+    // Advance 60 ms (total 260 ms > 250 ms): pulse expires and deactivates
+    ArduinoMock::advanceMillis(60);
+    pulse.update();
+    TEST_ASSERT_FALSE(pulse.getState());
+    TEST_ASSERT_EQUAL(LOW, ArduinoMock::getPinState(47));
+
+    // Trigger via trigger() method
+    pulse.trigger();
+    TEST_ASSERT_TRUE(pulse.getState());
+    TEST_ASSERT_EQUAL(HIGH, ArduinoMock::getPinState(47));
+
+    ArduinoMock::advanceMillis(260);
+    pulse.update();
+    TEST_ASSERT_FALSE(pulse.getState());
+    TEST_ASSERT_EQUAL(LOW, ArduinoMock::getPinState(47));
+}
+
+void test_modular_system_controller_custom_config(void) {
+    // Define a custom 5-channel system: 2 dimmable, 2 digital, 1 pulse
+    const ChannelConfig customConfigs[5] = {
+        {"Reading Light", 12, ChannelType::Dimmable, 0, true, 75, false},
+        {"Cabin Light",   13, ChannelType::Dimmable, 0, true, 80, false},
+        {"Water Pump",     4, ChannelType::Digital, 300000, false, 0, false}, // 5 min auto-off
+        {"Fridge",         5, ChannelType::Digital, 0, true, 0, false},
+        {"Horn Pulse",    16, ChannelType::MomentaryPulse, 400, false, 0, false}
+    };
+
+    const RemoteMapping customMappings[3] = {
+        {1, 0, 0, SpecialRemoteAction::None}, // Remote 1, Button 0 -> Reading Light
+        {1, 1, 2, SpecialRemoteAction::None}, // Remote 1, Button 1 -> Water Pump
+        {1, 2, 4, SpecialRemoteAction::None}  // Remote 1, Button 2 -> Horn Pulse
+    };
+
+    SystemController controller(customConfigs, 5, customMappings, 3);
+    controller.begin();
+
+    // Verify channel count
+    TEST_ASSERT_EQUAL_UINT8(5, controller.getChannelCount());
+    TEST_ASSERT_NOT_NULL(controller.getChannel(0));
+    TEST_ASSERT_NOT_NULL(controller.getChannel(4));
+    TEST_ASSERT_NULL(controller.getChannel(5)); // Out of bounds
+
+    // Channel names and types
+    TEST_ASSERT_EQUAL_STRING("Reading Light", controller.getChannel(0)->getName());
+    TEST_ASSERT_TRUE(controller.getChannel(0)->isDimmable());
+    TEST_ASSERT_EQUAL_STRING("Horn Pulse", controller.getChannel(4)->getName());
+    TEST_ASSERT_FALSE(controller.getChannel(4)->isDimmable());
+
+    // Channel lookup by name
+    TEST_ASSERT_EQUAL(2, controller.getChannelIndexByName("Water Pump"));
+    TEST_ASSERT_EQUAL(-1, controller.getChannelIndexByName("NonExistent"));
+
+    // Water pump auto-detected index
+    TEST_ASSERT_EQUAL(2, controller.getPumpChannelIndex());
+
+    // Dispatch message to custom mapped pulse channel
+    uint8_t mac[6] = {0xAA, 0x11, 0x22, 0x33, 0x44, 0x55};
+    SwitchMessage msg = {};
+    msg.remote_id = 1;
+    msg.button_index = 2; // Mapped to Horn Pulse (ch 4, pin 16)
+    msg.action = (uint8_t)ActionType::Click;
+    msg.seq = 1;
+
+    controller.dispatchMessage(mac, msg);
+    TEST_ASSERT_TRUE(controller.getChannel(4)->getState());
+    TEST_ASSERT_EQUAL(HIGH, ArduinoMock::getPinState(16));
+
+    // Advance 410 ms -> pulse completes
+    ArduinoMock::advanceMillis(410);
+    controller.update();
+    TEST_ASSERT_FALSE(controller.getChannel(4)->getState());
+    TEST_ASSERT_EQUAL(LOW, ArduinoMock::getPinState(16));
+}
+
+void test_24_channel_full_matrix(void) {
+    SystemController controller; // Default 24 channels
+    controller.begin();
+
+    TEST_ASSERT_EQUAL_UINT8(24, controller.getChannelCount());
+
+    // Verify 14 Power Channels (Ch 0..13)
+    for (uint8_t i = 0; i < 4; i++) {
+        Channel* ch = controller.getChannel(i);
+        TEST_ASSERT_NOT_NULL(ch);
+        TEST_ASSERT_TRUE(ch->isDimmable());
+    }
+    for (uint8_t i = 4; i < 14; i++) {
+        Channel* ch = controller.getChannel(i);
+        TEST_ASSERT_NOT_NULL(ch);
+        TEST_ASSERT_FALSE(ch->isDimmable());
+    }
+
+    // Verify 10 Signal Channels (Ch 14..23)
+    for (uint8_t i = 14; i < 20; i++) {
+        Channel* ch = controller.getChannel(i);
+        TEST_ASSERT_NOT_NULL(ch);
+        TEST_ASSERT_FALSE(ch->isDimmable());
+    }
+    // Ch 20 is Maxxair Keypad Pulse
+    Channel* maxxairPulse = controller.getChannel(20);
+    TEST_ASSERT_NOT_NULL(maxxairPulse);
+    TEST_ASSERT_EQUAL_STRING("Maxxair Keypad Pulse", maxxairPulse->getName());
+    TEST_ASSERT_EQUAL(47, maxxairPulse->getPin());
+
+    // Ch 23 is Aux Signal 3 (Gen Start)
+    Channel* genStart = controller.getChannel(23);
+    TEST_ASSERT_NOT_NULL(genStart);
+    TEST_ASSERT_EQUAL_STRING("Aux Signal 3 (Gen Start)", genStart->getName());
+    TEST_ASSERT_EQUAL(16, genStart->getPin());
+
+    // Remote 1 button 3 mapped to Inverter MultiPlus II (Ch 14, pin 21)
+    uint8_t mac[6] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06};
+    SwitchMessage msg = {};
+    msg.remote_id = 1;
+    msg.button_index = 3;
+    msg.action = (uint8_t)ActionType::Click;
+    msg.seq = 1;
+
+    controller.dispatchMessage(mac, msg);
+    TEST_ASSERT_TRUE(controller.getChannel(14)->getState());
+    TEST_ASSERT_EQUAL(HIGH, ArduinoMock::getPinState(21));
+
+    // Cockpit Remote 3 SW2 (button 1) mapped to Orion-XS #1 (Ch 15, pin 38)
+    msg.remote_id = 3;
+    msg.button_index = 1;
+    msg.seq = 1;
+
+    controller.dispatchMessage(mac, msg);
+    TEST_ASSERT_TRUE(controller.getChannel(15)->getState());
+    TEST_ASSERT_EQUAL(HIGH, ArduinoMock::getPinState(38));
+
+    // Cockpit Remote 3 SW5 (button 4) toggles Inverter (Ch 14, pin 21) -> should turn OFF
+    msg.remote_id = 3;
+    msg.button_index = 4;
+    msg.seq = 2;
+
+    controller.dispatchMessage(mac, msg);
+    TEST_ASSERT_FALSE(controller.getChannel(14)->getState());
+    TEST_ASSERT_EQUAL(LOW, ArduinoMock::getPinState(21));
+}
+
+void test_remote_mapping_customization(void) {
+    SystemController controller;
+    controller.begin();
+
+    // Dynamically rebind Remote 1 Button 6 to Ch 20 (Maxxair Keypad Pulse)
+    controller.addRemoteMapping(1, 6, 20, SpecialRemoteAction::None);
+
+    uint8_t mac[6] = {0xBB, 0x22, 0x33, 0x44, 0x55, 0x66};
+    SwitchMessage msg = {};
+    msg.remote_id = 1;
+    msg.button_index = 6;
+    msg.action = (uint8_t)ActionType::Click;
+    msg.seq = 1;
+
+    controller.dispatchMessage(mac, msg);
+    TEST_ASSERT_TRUE(controller.getChannel(20)->getState());
+    TEST_ASSERT_EQUAL(HIGH, ArduinoMock::getPinState(47));
+
+    ArduinoMock::advanceMillis(260);
+    controller.update();
+    TEST_ASSERT_FALSE(controller.getChannel(20)->getState());
+    TEST_ASSERT_EQUAL(LOW, ArduinoMock::getPinState(47));
+}
+
 int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(test_digital_channel_toggle);
@@ -552,6 +738,11 @@ int main(int argc, char **argv) {
     RUN_TEST(test_water_pump_shower_timer_with_chirp);
     RUN_TEST(test_water_pump_shower_mode_dispatch_and_cancel);
     RUN_TEST(test_shower_mode_nvs_configuration);
+    RUN_TEST(test_pulse_channel);
+    RUN_TEST(test_modular_system_controller_custom_config);
+    RUN_TEST(test_24_channel_full_matrix);
+    RUN_TEST(test_remote_mapping_customization);
     return UNITY_END();
 }
+
 
