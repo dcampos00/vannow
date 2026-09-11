@@ -105,7 +105,7 @@ DASHBOARD INTERFACE ARCHITECTURE:
 
 | Parameter | Specification | Notes |
 | :--- | :--- | :--- |
-| **Enclosure Envelope** | $75.0\,\text{mm} \times 52.0\,\text{mm} \times 24.0\,\text{mm}$ | Compact ABS enclosure with dual M4 mounting tabs. |
+| **Enclosure Envelope** | $76.0\,\text{mm} \times 58.0\,\text{mm} \times 30.0\,\text{mm}$ | `cockpit_enclosure_*` (20 mm base + 10 mm lid) with dual M4 ears (108 mm span). |
 | **Power Supply** | $2\times\,\text{AA}$ Alkaline Cells ($3.0\,\text{V}$ nominal) | Direct connection to $3.3\,\text{V}$ rail. Shelf life $>5$ years. |
 | **Standby Current** | **$14.8\,\mu\text{A}$** in Deep Sleep | $2600\,\text{mAh} / 0.015\,\text{mA} \approx 173,000\,\text{hours} \approx 19\,\text{years}$. |
 | **Switch Inputs** | 6 independent channels via 3.5 mm pluggable terminal blocks | Compatible with momentary rocker switches, pushbuttons, and Carling V-Series. |

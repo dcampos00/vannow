@@ -7,9 +7,11 @@ all enclosures and cradles for the VanNOW project.
 Models:
   1. central_enclosure_base     - Central unit base with DIN ears, reinforced standoffs, lip rim, PG gland collars, and vent slots
   2. central_enclosure_lid      - Central unit lid with counterbored M3 holes, internal boss columns, groove rim, and SPDT keyways
-  3. remote_enclosure_body      - Remote rear body with non-colliding magnet pockets, 2x AA tray, M2.5 corner bosses, and PCB standoffs
-  4. remote_enclosure_faceplate - Remote faceplate with tongue rim, chamfered button apertures, encoder bezel, and countersunk holes
-  5. remote_magnetic_cradle     - Docking cradle with 45° lead-in chamfer, dual finger extraction scallops, and recessed wall mounts
+  3. central_24ch_enclosure_*   - 24-channel cabinet (205 x 135 mm) for the 180 x 110 mm carrier
+  4. cockpit_enclosure_*        - Dash hub (76 x 58 mm) for the 55 x 45 mm cockpit PCB
+  5. remote_enclosure_body      - Remote rear body with non-colliding magnet pockets, 2x AA tray, M2.5 corner bosses, and PCB standoffs
+  6. remote_enclosure_faceplate - Remote faceplate with tongue rim, chamfered button apertures, encoder bezel, and countersunk holes
+  7. remote_magnetic_cradle     - Docking cradle with 45° lead-in chamfer, dual finger extraction scallops, and recessed wall mounts
 
 Outputs:
   - hardware/enclosures/models/*.step (STEP for CAD/CNC/Injection Molding)
@@ -548,17 +550,164 @@ def build_magnetic_cradle():
     return cradle.part
 
 
-def main():
-    parts = {
-        "central_enclosure_base": build_central_base(),
-        "central_enclosure_lid": build_central_lid(),
-        "central_24ch_enclosure_base": build_central_24ch_base(),
-        "central_24ch_enclosure_lid": build_central_24ch_lid(),
-        "remote_enclosure_body": build_remote_body(),
-        "remote_enclosure_faceplate": build_remote_faceplate(),
-        "remote_magnetic_cradle": build_magnetic_cradle(),
-    }
+def build_cockpit_base():
+    """Cockpit Switch Hub Enclosure - Base Unit.
+    Features:
+      - Length: 76.0mm, Width: 58.0mm, Height: 20.0mm, Wall: 2.5mm, Floor: 3.0mm
+      - Inner cavity: 71.0mm x 53.0mm, fits the 55x45mm PCB (8.0mm X / 4.0mm Y edge clearance)
+      - Height clears a socketed XIAO (4.5mm standoff + 1.6mm PCB + 8.5mm header + 5mm module + 3mm air)
+      - Integrated dual M4 mounting ears along X-axis (total span 108.0mm) for dashboard chassis fixing
+      - 4x M3 PCB standoffs at (±24.0mm, ±19.0mm, height 4.5mm, OD 7.5mm) with short heat-set pilots
+      - 4x Corner lid screw bosses with M3 heat-set insert pilot holes (dia 4.0mm x 5.5mm)
+      - Wire entry slot on North wall (+Y) for J4/J5/J6 Carling harness (width 44.0mm x height 8.0mm)
+      - Wire entry slot on South wall (-Y) for J1 battery/power (width 12.0mm x height 8.0mm)
+      - Stepped perimeter mating lip (+1.8mm high, 1.2mm wide) for positive lid interlock
+    """
+    length = 76.0
+    width = 58.0
+    height = 20.0
+    wall = 2.5
+    floor = 3.0
+    lip_h = 1.8
+    lip_w = 1.2
 
+    with BuildPart() as base:
+        # 1. Base floor plate with dual M4 mounting ears
+        with BuildSketch(Plane.XY) as s_floor:
+            RectangleRounded(length, width, 4.0)
+            # Mounting ears on -X and +X
+            with Locations((-length / 2 - 8.0, 0), (length / 2 + 8.0, 0)):
+                RectangleRounded(16.0, 24.0, 3.0)
+                Circle(radius=2.25, mode=Mode.SUBTRACT)  # M4 clearance hole
+        extrude(amount=floor)
+
+        # 2. Main vertical walls
+        with BuildSketch(Plane.XY.offset(floor)) as s_walls:
+            RectangleRounded(length, width, 4.0)
+            RectangleRounded(length - 2 * wall, width - 2 * wall, max(0.1, 4.0 - wall), mode=Mode.SUBTRACT)
+        extrude(amount=height - floor)
+
+        # 3. Stepped perimeter mating lip on top rim
+        with BuildSketch(Plane.XY.offset(height)) as s_lip:
+            RectangleRounded(length - 2 * lip_w, width - 2 * lip_w, max(0.1, 4.0 - lip_w))
+            RectangleRounded(length - 2 * wall, width - 2 * wall, max(0.1, 4.0 - wall), mode=Mode.SUBTRACT)
+        extrude(amount=lip_h)
+
+        # 4. 4x Corner screw bosses integrated into wall corners for lid fastening
+        corner_dx = length / 2 - wall - 3.2
+        corner_dy = width / 2 - wall - 3.2
+        boss_h = height - floor
+        with Locations(
+            (-corner_dx, -corner_dy, floor),
+            (corner_dx, -corner_dy, floor),
+            (-corner_dx, corner_dy, floor),
+            (corner_dx, corner_dy, floor)
+        ):
+            Cylinder(radius=3.6, height=boss_h, align=(Align.CENTER, Align.CENTER, Align.MIN))
+            with Locations((0, 0, boss_h - 5.5)):
+                Cylinder(radius=2.0, height=6.0, align=(Align.CENTER, Align.CENTER, Align.MIN), mode=Mode.SUBTRACT)
+
+        # 5. 4x PCB Standoffs (48x38mm pitch: ±24.0mm, ±19.0mm, matches layout_and_route.py)
+        # OD 7.5mm for an M3 brass insert. Short 4mm insert sits on the 3.0mm floor (blind backing).
+        pcb_dx = 24.0
+        pcb_dy = 19.0
+        standoff_h = 4.5
+        with Locations(
+            (-pcb_dx, -pcb_dy, floor),
+            (pcb_dx, -pcb_dy, floor),
+            (-pcb_dx, pcb_dy, floor),
+            (pcb_dx, pcb_dy, floor)
+        ):
+            Cylinder(radius=3.75, height=standoff_h, align=(Align.CENTER, Align.CENTER, Align.MIN))
+            Cylinder(radius=2.0, height=standoff_h, align=(Align.CENTER, Align.CENTER, Align.MIN), mode=Mode.SUBTRACT)
+
+        # 6. Wire egress on North wall (+Y) for J4/J5/J6 (180° MPT bodies span X = -19.4 to +19.4)
+        with Locations((0.0, width / 2, floor + 8.0)):
+            Box(44.0, wall * 3, 8.0, mode=Mode.SUBTRACT)
+
+        # 7. Power cable entry on South wall (-Y) for J1 (origin X = -17.5mm)
+        with Locations((-17.5, -width / 2, floor + 8.0)):
+            Box(12.0, wall * 3, 8.0, mode=Mode.SUBTRACT)
+
+    return base.part
+
+
+def build_cockpit_lid():
+    """Cockpit Switch Hub Enclosure - Top Lid.
+    Features:
+      - Length: 76.0mm, Width: 58.0mm, Height: 10.0mm, Top Wall: 3.5mm, Side Wall: 2.5mm
+      - Perimeter mating groove (1.6mm wide x 2.0mm deep) on underside rim to seat base lip
+      - 4x Corner screw boss columns extending down to meet base bosses
+      - 4x M3 Counterbored screw holes (dia 3.4mm, counterbore dia 6.2mm x 1.8mm deep)
+        Leaves 1.7mm solid clamping shoulder
+      - Status LED diagnostic aperture (dia 2.5mm) with internal conical light funnel at (13.0mm, -4.38mm)
+      - North and South rim reliefs matching wire egress slots
+    """
+    length = 76.0
+    width = 58.0
+    height = 10.0
+    wall = 2.5
+    top_wall = 3.5
+    lip_w = 1.6
+    lip_d = 2.0
+
+    with BuildPart() as lid:
+        # 1. Top ceiling plate
+        with BuildSketch(Plane.XY) as s_top:
+            RectangleRounded(length, width, 4.0)
+        extrude(amount=-top_wall)
+
+        # 2. Outer side walls extending downward
+        with BuildSketch(Plane.XY.offset(-top_wall)) as s_walls:
+            RectangleRounded(length, width, 4.0)
+            RectangleRounded(length - 2 * wall, width - 2 * wall, max(0.1, 4.0 - wall), mode=Mode.SUBTRACT)
+        extrude(amount=-(height - top_wall))
+
+        # 3. Stepped perimeter mating groove in bottom rim
+        with BuildSketch(Plane.XY.offset(-height)) as s_groove:
+            RectangleRounded(length - 2 * (wall - lip_w), width - 2 * (wall - lip_w), max(0.1, 4.0 - wall + lip_w))
+            RectangleRounded(length - 2 * wall, width - 2 * wall, max(0.1, 4.0 - wall), mode=Mode.SUBTRACT)
+        extrude(amount=lip_d, mode=Mode.SUBTRACT)
+
+        # 4. 4x Corner screw boss columns extending down from ceiling
+        corner_dx = length / 2 - wall - 3.2
+        corner_dy = width / 2 - wall - 3.2
+        boss_h = height - top_wall
+        with Locations(
+            (-corner_dx, -corner_dy, -top_wall),
+            (corner_dx, -corner_dy, -top_wall),
+            (-corner_dx, corner_dy, -top_wall),
+            (corner_dx, corner_dy, -top_wall)
+        ):
+            Cylinder(radius=3.6, height=boss_h, align=(Align.CENTER, Align.CENTER, Align.MAX))
+
+        # 5. 4x Counterbored M3 screw holes
+        with Locations(
+            (-corner_dx, -corner_dy, 0),
+            (corner_dx, -corner_dy, 0),
+            (-corner_dx, corner_dy, 0),
+            (corner_dx, corner_dy, 0)
+        ):
+            Cylinder(radius=1.7, height=height + 2, align=(Align.CENTER, Align.CENTER, Align.MAX), mode=Mode.SUBTRACT)
+            Cylinder(radius=3.1, height=1.8, align=(Align.CENTER, Align.CENTER, Align.MAX), mode=Mode.SUBTRACT)
+
+        # 6. Status LED light aperture at (13.0, -4.38)
+        with Locations((13.0, -4.38, 0)):
+            Cylinder(radius=1.25, height=top_wall + 2, align=(Align.CENTER, Align.CENTER, Align.MAX), mode=Mode.SUBTRACT)
+            # Internal conical light funnel on underside
+            with Locations((0, 0, -top_wall)):
+                Cone(top_radius=1.25, bottom_radius=2.5, height=1.5, align=(Align.CENTER, Align.CENTER, Align.MIN), mode=Mode.SUBTRACT)
+
+        # 7. Wire clearance reliefs on rim (North and South) to match base wire slots
+        with Locations((0.0, width / 2, -height)):
+            Box(44.0, wall * 3, 2.5, align=(Align.CENTER, Align.CENTER, Align.MIN), mode=Mode.SUBTRACT)
+        with Locations((-17.5, -width / 2, -height)):
+            Box(12.0, wall * 3, 2.5, align=(Align.CENTER, Align.CENTER, Align.MIN), mode=Mode.SUBTRACT)
+
+    return lid.part
+
+
+def export_parts(parts):
     print(f"\n========================================================")
     print(f"VanNOW Production 3D CAD Generator (build123d / OpenCASCADE)")
     print(f"Output directory: {os.path.abspath(OUTPUT_DIR)}")
@@ -584,6 +733,21 @@ def main():
         print(f"    Exported     : {name}.step | {name}.stl")
 
     print(f"\nAll {len(parts)} parametric models generated and exported successfully!")
+
+
+def main():
+    parts = {
+        "central_enclosure_base": build_central_base(),
+        "central_enclosure_lid": build_central_lid(),
+        "central_24ch_enclosure_base": build_central_24ch_base(),
+        "central_24ch_enclosure_lid": build_central_24ch_lid(),
+        "cockpit_enclosure_base": build_cockpit_base(),
+        "cockpit_enclosure_lid": build_cockpit_lid(),
+        "remote_enclosure_body": build_remote_body(),
+        "remote_enclosure_faceplate": build_remote_faceplate(),
+        "remote_magnetic_cradle": build_magnetic_cradle(),
+    }
+    export_parts(parts)
 
 
 if __name__ == "__main__":

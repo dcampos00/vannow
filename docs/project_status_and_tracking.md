@@ -49,8 +49,8 @@ This document provides a single source of truth for the implementation status ac
   - Faceplate (`remote_enclosure_faceplate.step / .stl`): 86 mm × 86 mm × 3.8 mm, 6x chamfered 12.2 mm pushbutton apertures, recessed dial bezel (dia 18 mm) for EC11 rotary knob, dia 2 mm micro-LED light dispersion cone.
   - Magnetic Docking Cradle (`remote_magnetic_cradle.step / .stl`): 96 mm × 96 mm × 11 mm, 45° lead-in chamfer, dual ergonomic extraction scallops, wall-mounting screw wells.
 - **Cockpit Hub Enclosure (`hardware/enclosures/`):**
-  - Base (`cockpit_enclosure_base.step / .stl`): 108 mm × 58 mm × 17.8 mm, dual M4 chassis ears, 4x M3 PCB standoffs (48 mm × 38 mm pitch), 4x corner M3 lid bosses, North switch harness slot (40 mm × 8 mm), South power entry slot (12 mm × 8 mm).
-  - Lid (`cockpit_enclosure_lid.step / .stl`): 76 mm × 58 mm × 10 mm, stepped groove rim, 4x M3 counterbored holes (1.7 mm shoulder), dia 2.5 mm status LED aperture with conical light funnel. Verified 0.0 mm³ geometric clash against `cockpit_pcb.step`.
+  - Base (`cockpit_enclosure_base.step / .stl`): 108 mm × 58 mm × 21.8 mm (20 mm walls + 1.8 mm lip), dual M4 chassis ears, 4x M3 PCB standoffs (48 mm × 38 mm pitch, 7.5 mm OD), 4x corner M3 lid bosses, North J4–J6 harness slot (44 mm × 8 mm), South J1 power slot (12 mm × 8 mm). Height clears a socketed XIAO.
+  - Lid (`cockpit_enclosure_lid.step / .stl`): 76 mm × 58 mm × 10 mm, stepped groove rim, 4x M3 counterbored holes (1.7 mm shoulder), dia 2.5 mm status LED aperture at (13.0, −4.38) matching D7. The populated `cockpit_pcb.step` omits the XIAO module, so lid clearance is budgeted from header + module stack, not from that STEP clash volume.
 
 ### 2.3 Hardware-as-Code & Schematics (Atopile)
 - **Overall Status:** 100% Complete & Compiling.
@@ -103,7 +103,7 @@ This document provides a single source of truth for the implementation status ac
 | **P3** | Entrance Remote 3D Raytracing | `hardware/entrance-remote-pcb/` | 🟢 Complete | STEP solid CAD + 3x 1080p raytraced renders in `renders/` |
 | **P4** | Cockpit Hub PCB Placement | `hardware/cockpit-pcb/` | 🟢 Complete | 55×45 mm outline, 4x M3 holes, 29 footprints, 0 collisions |
 | **P5** | Cockpit Hub Routing, DRC & 3D | `hardware/cockpit-pcb/` | 🟢 Complete | 0 DRC violations, 0 unconnected, STEP + 3x 1080p renders |
-| **P6** | Cockpit Hub Enclosure CAD | `hardware/enclosures/` | 🟢 Complete | STEP/STL exported, Z-buffer rendered, 0.0 mm³ ECAD clash |
+| **P6** | Cockpit Hub Enclosure CAD | `hardware/enclosures/` | 🟢 Complete | 76×58×20 mm base, 44 mm J4–J6 slot, socketed-XIAO height, STEP/STL exported |
 | **P7** | Central PCB Header Alignment | `hardware/central-pcb/` | 🟢 Complete | J7/J8 headers aligned at 25.4mm pitch (standard DevKit footprint) |
 | **P8** | Central PCB Power & Signal Routing | `hardware/central-pcb/` | 🟢 Complete | 0 DRC violations, 0 unconnected items across both F.Cu & B.Cu |
 | **P9** | Central PCB 3D Render & Verification | `hardware/central-pcb/` | 🟢 Complete | 3x 1440p raytraced renders, STEP solid export, 0-clash MCAD verified |
