@@ -1,90 +1,58 @@
 ---
 name: cross-domain-sync
 description: >-
-  Methodology and verification audit procedure for maintaining strict electromechanical and cyber-physical alignment
-  across Hardware-as-Code (Atopile), PCB procedural layouts (KiCad pcbnew), Embedded Firmware (PlatformIO/C++),
-  and Parametric 3D Enclosures (build123d). Use when modifying pinouts, updating channel topologies, resizing carrier boards,
-  or preparing manufacturing releases.
+  Keeps VanNOW Atopile netlists, KiCad layouts, firmware GPIOs, and enclosure
+  apertures aligned. Use when changing pinouts, channel maps, board size,
+  terminal positions, remote button indices, or preparing a manufacturing release.
 ---
 
-# Cross-Domain Co-Design Synchronization & Audit Guide
+# Cross-Domain Co-Design Sync
 
-This skill provides an authoritative verification process for managing cross-domain dependencies in the **VanNOW** camper van automation ecosystem. In multi-board cyber-physical architectures, changes in one engineering layer (electronic schematics, physical PCB routing, firmware logic, or parametric 3D enclosures) propagate across the entire system.
-
----
-
-## The Four Engineering Layers
+Four layers must describe the **same** 24-channel machine. The 11-channel PROFET carrier is legacy.
 
 ```mermaid
-graph TD
-    subgraph Layer 1: Hardware-as-Code
-        A["Atopile Schematics (*.ato)"]
-    end
-    subgraph Layer 2: Physical Layout
-        B["KiCad Procedural Layout (*.py)"]
-    end
-    subgraph Layer 3: Embedded Firmware
-        C["PlatformIO / C++ (*.cpp, *.h)"]
-    end
-    subgraph Layer 4: Mechanical Enclosures
-        D["build123d Parametric CAD (*.py)"]
-    end
-
-    A -->|"Netlist / Sockets"| B
-    A -->|"GPIO Assignments"| C
-    B -->|"Board Geometry & Hole Coordinates"| D
-    B -->|"Connector Apertures"| D
-    C -->|"State Tracking & Protocol Packets"| A
+flowchart LR
+  ATO["Atopile *.ato"] --> PCB["layout_and_route_24ch.py"]
+  ATO --> FW["SystemController.cpp / remote main.cpp"]
+  PCB --> CAD["generate_enclosures.py"]
 ```
 
----
-
-## Common Cross-Domain Pitfalls in VanNOW
-
-1. **DevKit Perspective Inversions:**
-   - *Symptom:* Pin J3-Pin 1 connected to 5V power, shorting VCC directly to GND.
-   - *Rule:* Always cross-verify whether Atopile female header pinouts reflect **Top View** (looking down on the dev board) or **Bottom View** (looking at carrier female headers).
-2. **Firmware Pinout Desynchronization:**
-   - *Symptom:* Reassigning a channel from GPIO 4 to GPIO 15 in Atopile without updating `SystemController.h`.
-   - *Rule:* Any net modification in `*.ato` mandates an immediate search in `firmware/central/src/` and `firmware/remote/src/` to update pin definitions, followed by `pio test -e native`.
-3. **Connector / Wall Aperture Clashing:**
-   - *Symptom:* Shifting Phoenix Contact terminal blocks 5 mm to the right causes wires to hit the 3D-printed enclosure wall.
-   - *Rule:* Standoff coordinates and aperture cutouts in `hardware/enclosures/scripts/generate_enclosures.py` must derive their bounding boxes directly from the PCB outline and terminal positions in `layout_and_route.py`.
-4. **Wireless Channel ID Mismatch:**
-   - *Symptom:* Remote transmitter sending toggle command for Channel 3, while Central Controller maps Channel 3 to Water Pump instead of Kitchen Light.
-   - *Rule:* Channel IDs (0..23) are unified across `protocol.h`, `SystemController.h`, and `cockpit.ato`.
+Authoritative table: [co_design_verification_matrix.md](./references/co_design_verification_matrix.md).  
+Active logic defects / residuals: `docs/logic_audit_2026-09-11.md`.
 
 ---
 
-## Step-by-Step Co-Design Change Protocol
+## Pitfalls (current)
 
-Whenever an engineering change is initiated:
-
-### Phase 1: Schematic & Netlist (Atopile)
-1. Update `*.ato` file with new pins, connections, or components.
-2. Compile and assert: `ato build` passes with zero net shorts.
-
-### Phase 2: PCB Procedural Routing (`pcbnew`)
-1. Update `layout_and_route.py` with modified footprint locations or trace nets.
-2. Run routing script:
-   ```bash
-   flatpak run --command=python3 org.kicad.KiCad hardware/central-pcb/scripts/layout_and_route.py
-   ```
-3. Verify headless DRC produces 0 unconnected nets and 0 violations.
-
-### Phase 3: Firmware Pin Mapping & Logic (PlatformIO)
-1. Update GPIO constants in `SystemController.h` or `BinaryMatrixHandler.h`.
-2. Verify native test suites:
-   ```bash
-   pio test -d firmware/central -e native
-   pio test -d firmware/remote -e native
-   ```
-
-### Phase 4: Mechanical Enclosure Fit Check (`build123d`)
-1. Verify PCB length, width, mounting hole radii, and connector windows in `hardware/enclosures/scripts/generate_enclosures.py`.
-2. Export STEP solids and run electromechanical clash detection per the `pcb-rendering` skill.
+1. **11-ch PCB + 24-ch firmware:** GPIO 2/16/18 mean LED vs LPG/gen/awning. Never mix.
+2. **DevKit header view:** J1 pin 21 = 5 V, J3 pin 1 = GND (v1.1). Do not reconnect VIN to J3 pin 1.
+3. **XIAO silk ≠ GPIO number:** D3=21, D4=22, D10=18. GPIO 9 is BOOT.
+4. **Button index ≠ channel index:** Entrance button 4 is the pump (Ch 4); encoder is button 7 (focus zone, not Ch 0).
+5. **Script-invented pads:** If the layout script adds a terminal, the same net must exist in `VanCentralController24Ch`.
+6. **Enclosure pitch:** 24-ch PCB 180×110 mm → standoffs 170×100 mm. 11-ch 150×95 mm → 140×85 mm.
 
 ---
 
-## Authoritative Reference Tables
-Detailed channel mappings and pin assignments: [co_design_verification_matrix.md](./references/co_design_verification_matrix.md).
+## Change protocol
+
+1. **Atopile** — edit `*.ato`, keep flyback on PROFET/load+, BAT54S on ADC, D10→GPIO18.
+2. **Layout** — update `layout_and_route_24ch.py` (or the remote script). Run DRC to 0/0.
+3. **Firmware** — `DEFAULT_24CH_CONFIG` and `DEFAULT_REMOTE_MAPPINGS` live in `SystemController.cpp`, not a `PIN_CH0` header. Remote pins live in `firmware/remote/src/main.cpp`. Then:
+
+```bash
+pio test -d firmware/central -e native
+pio test -d firmware/remote -e native
+```
+
+4. **CAD** — `pcb_length` / `pcb_width` / hole pitch in `generate_enclosures.py` must match the PCB just routed.
+
+---
+
+## Checklist
+
+- [ ] Matrix row updated for every pin or button index change
+- [ ] Firmware and Atopile GPIO match that row
+- [ ] Layout script net names match Atopile
+- [ ] Enclosure holes match layout
+- [ ] Native tests pass
+- [ ] Dashboard does not call a board “production ready” if firmware identity differs
