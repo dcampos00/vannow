@@ -1,335 +1,283 @@
 # VanNOW — Breadboard Prototyping & Hardware Validation Guide
 
-This document is the authoritative, progressive engineering guide for assembling, wiring, and validating the **VanNOW** camper van automation system on a solderless breadboard.
+Authoritative bench procedure for the **24-channel firmware** on `fix/logic-audit-2026-09-11` (and later). It supersedes older pin tables in this file and in [`lista_compras_prototipo.md`](lista_compras_prototipo.md). Do **not** use that shopping list for wiring.
 
-To guarantee maximum hardware safety and eliminate the risk of damaging microcontrollers, this guide is strictly partitioned into two progressive phases:
-1. **Phase A: Safe 5V USB Bench Test (Zero 12V Required):** Validates 90% of the system—firmware state machines, ESP-NOW wireless links, 200 Hz PWM dimming curves, rotary encoder quadrature decoding, NVS flash persistence, and sub-18 µA Deep Sleep—using only USB power, 2x AA batteries, and standard 5mm indicator LEDs.
-2. **Phase B: 12V Automotive Power & High-Current Switching:** Validates DC-DC buck regulation (MP1584EN), precision battery ADC telemetry (100k/18k divider), high-current logic MOSFET switching, inductive flyback clamping (1N5408), and optocoupler galvanic isolation once a 12V source (bench PSU, 12V wall adapter, or fused vehicle battery) is ready.
+This is a **lab bring-up**, not a fabrication release. Do not order PCBs from this guide.
 
----
+Two phases:
 
-## 1. Prototype Bill of Materials (BOM)
-
-### 1.1 Phase A: Low-Voltage Bring-Up (5V USB & 3V Battery Only)
-| Qty | Item | Model / Specification | Purpose |
-| :---: | :--- | :--- | :--- |
-| **1** | Central Microcontroller | **Lonely Binary ESP32-S3 N16R8** (or DevKitC-1) | Receiver, 24-channel dispatch, PWM, NVS, WDT |
-| **1** | Remote Microcontroller | **Seeed Studio XIAO ESP32-C6** | Transmitter, Deep Sleep (~15 µA), Diode-OR wake |
-| **2** | Data Cables | USB-A to USB-C (or USB-C to USB-C) | 5V power supply, flashing, and serial telemetry |
-| **1** | Remote Battery Holder | **2x AA Battery Holder** (with switch/leads) | Direct 3.0V supply to XIAO ESP32-C6 `3V3` rail |
-| **2** | AA Alkaline Batteries | Standard 1.5V AA cells | Remote power source (~3.0V) |
-| **1** | Rotary Encoder | **Alps EC11** with integrated push switch | Master dimmer dial and active zone toggle |
-| **4** | Tactile Pushbuttons | Standard 6x6 mm or 12x12 mm breadboard buttons | Zone 1, Zone 2, Water Pump, All-OFF inputs |
-| **4** | Small Signal Diodes | **BAT54**, **BAS70**, or **1N4148** | Hardware Diode-OR wakeup matrix |
-| **1** | Pull-Up Resistor | **47 kΩ**, 1/4W | Diode-OR wakeup bus pull-up to 3.3V |
-| **4** | Current Limiting Resistors | **220 Ω** or **330 Ω**, 1/4W | Current limiting for breadboard test LEDs |
-| **3** | Indicator LEDs | Green, Red, Yellow 5mm LEDs | Simulates Zone 1 Dimmer, Water Pump, and Buzzer |
-| **2** | Solderless Breadboards | Standard 400-tie or 830-tie breadboards | One for Central, one for Remote |
-| **1** | Jumper Wire Kit | Male-to-Male & Male-to-Female jumper wires | Circuit interconnection |
-| **1** | Digital Multimeter (DMM) | With µA DC measurement capability | Measuring Remote Deep Sleep current |
-
-### 1.2 Phase B: 12V Automotive Power & Load Switching (Add When Ready)
-| Qty | Item | Model / Specification | Purpose |
-| :---: | :--- | :--- | :--- |
-| **1** | 12V Power Source | 12V 1A–2A wall adapter, bench PSU, or fused van battery | Main 12V supply for buck and loads |
-| **1** | DC-DC Step-Down Regulator | **MP1584EN module** or **Pololu D24V10F5** | Steps 12V down to regulated 5.0V for Central |
-| **1** | Inline Fuse Holder & Fuse | Automotive Mini blade fuse (**5A**) | Over-current protection on 12V rail |
-| **1** | 4-Channel Logic MOSFET Module | **LR7843** or **AOD4184** (3.3V gate logic) | High-current N-channel PWM load switching |
-| **1** | Optocoupler Breakout Module | **PC817 2-channel or 4-channel module** | Galvanically isolated dry contact for inverter |
-| **1** | Power Diode | **1N5408** (3A, 1000V) or **1N5822** (3A Schottky) | Inductive flyback suppression across pump |
-| **1** | Precision Resistor | **100 kΩ**, 1/4W, 1% tolerance | Voltage divider high-side (battery sensing) |
-| **1** | Precision Resistor | **18 kΩ**, 1/4W, 1% tolerance | Voltage divider low-side (battery sensing) |
-| **1** | Resistor | **1 kΩ**, 1/4W | Divider ADC series protection resistor |
-| **1** | Ceramic Capacitor | **100 nF (0.1 µF)**, 50V | ADC anti-aliasing filter capacitor |
-| **1** | SPDT Toggle Switch | 3-position ON-OFF-ON (10A-15A @ 12V) | External manual emergency bypass switch |
-| **1** | 12V Test Load | 12V LED light strip segment (0.5m) or 12V motor | Validating high-current PWM and flyback |
+1. **Phase A — USB 5 V only (no 12 V):** ESP-NOW, entrance faceplate, encoder focus dimming, shower timer, NVS restore.
+2. **Phase B — fused 12 V:** buck 5 V, battery ADC, logic-level MOSFET + flyback, optocoupler dry contact.
 
 ---
 
-## 2. Phase A: Safe 5V USB Bench Test (Zero 12V Required)
+## 0. Identity (read before wiring)
 
-In this phase, **no 12V power is used**. The Central ESP32-S3 is powered directly via its USB-C port, and the Remote XIAO ESP32-C6 is powered either via 2x AA batteries or its own USB-C port. Standard 5mm LEDs simulate lighting and pump channels directly from the MCU GPIOs.
+| Item | Value |
+| :--- | :--- |
+| Central firmware | 24 channels. Zone 1 = **GPIO 12**, pump = **GPIO 4**. |
+| Remote image | Entrance only: `seeed_xiao_esp32c6` (`REMOTE_ID=1`). Do **not** flash `cockpit_xiao_esp32c6` on this breadboard. |
+| Encoder | Button index **7**. Turn dims the last focused lighting zone. Click sets that zone to **100%**. |
+| Shower | **5 min** on the pump only. Double-click (or first hold) on **button 4**. Cancel with a single click. Chirp is the **pump output** (GPIO 4), not a buzzer pin. |
+| Status LED | XIAO **D10 = GPIO 18**. Never drive GPIO 9 (BOOT). |
+| DevKit RGB | GPIO **38** (v1.1) and **48** (v1.0) are channel outputs. Do not hang LEDs on them. |
+| ESP-NOW MACs | Both sides program `AA:BB:CC:DD:EE:FF` (central) and `…:11` (entrance). Leave them matching. |
+| XIAO `3V3` | Regulator **output**. Do not feed 2×AA into it (audit H-12). Phase A uses USB-C. |
 
-### 2.1 Central Controller (ESP32-S3) 5V Test Schematic
+XIAO ESP32-C6 silk ≠ GPIO number:
+
+| Silk | GPIO | Entrance use |
+| :---: | :---: | :--- |
+| D0 | 0 | Diode-OR wakeup bus |
+| D1 | 1 | Encoder A |
+| D2 | 2 | Encoder B |
+| D3 | 21 | Zone 1 (button 0) |
+| D4 | 22 | Zone 2 (button 1) |
+| D5 | 23 | Zone 3 (button 2) |
+| D6 | 16 | Zone 4 (button 3) |
+| D7 | 17 | Water pump (button 4) |
+| D8 | 19 | Night off (button 5) |
+| D9 | 20 | Encoder SW only |
+| D10 | 18 | Status LED |
+
+---
+
+## 1. Prototype Bill of Materials
+
+### 1.1 Phase A (USB only)
+
+| Qty | Item | Purpose |
+| :---: | :--- | :--- |
+| 1 | Lonely Binary ESP32-S3 N16R8 (or DevKitC-1) | Central |
+| 1 | Seeed XIAO ESP32-C6 | Entrance remote |
+| 2 | USB-C cables | Flash + 5 V |
+| 1 | Alps EC11 with push switch | Focus dimmer |
+| 6 | Tactile buttons (or 3: Zone 1, pump, night) | Faceplate |
+| 6 | BAT54 / BAS70 / 1N4148 | Diode-OR to D0 (one per button + encoder SW) |
+| 1 | 47 kΩ | Wake bus pull-up to 3.3 V |
+| 3 | 220 Ω or 330 Ω | LED current limit |
+| 2 | 5 mm LEDs (green, red) | Zone 1 and pump on the central |
+| 1 | 5 mm LED (green) | Remote status on D10 |
+| 2 | Breadboards + jumper kit | Separate central / remote |
+
+Encoder A/B wake on LP-GPIO 1/2; they do not need diodes. Buttons and encoder SW do.
+
+### 1.2 Phase B (add when Phase A passes)
+
+| Qty | Item | Purpose |
+| :---: | :--- | :--- |
+| 1 | 12 V source (1–2 A wall brick, bench PSU, or fused van battery) | Bus |
+| 1 | MP1584EN (reputable) or Pololu D24V10F5 | 12 V → 5.00 V |
+| 1 | Mini blade fuse **5 A** at the +12 V source | Protection |
+| 1 | LR7843 / D4184 logic-level MOSFET module | Bench load switch |
+| 1 | PC817 2-ch module | Inverter dry-contact sim |
+| 1 | 1N5408 or 1N5822 | Pump flyback |
+| 1 | 100 kΩ 1% + 18 kΩ 1% + 1 kΩ + 100 nF | ADC front-end (GPIO 1) |
+| 1 | 12 V LED strip scrap or small motor | Load |
+
+Phase B with an N-channel module is **low-side** (load to drain, source to GND). That is acceptable for an isolated bench strip. Van production switching is **high-side PROFET**. Do not extend a low-side breadboard into chassis-return van wiring.
+
+---
+
+## 2. Phase A wiring
+
+Power both boards from USB-C. Common GND between boards is not required (ESP-NOW is wireless).
+
+### 2.1 Central (ESP32-S3)
 
 ```
-   [ PC / USB-C Charger (5V) ]
-                |
-          (USB-C Cable)
-                |
-                v
-   LONELY BINARY ESP32-S3 N16R8
-   +---------------------------------------+
-   |                                       |
-   |  GPIO 12 (PWM Zone 1) ---> [ 220 Ω ] ---> Anode (+) Green LED ---> GND
-   |  GPIO 4  (Water Pump) ---> [ 220 Ω ] ---> Anode (+) Red LED   ---> GND
-   |  GPIO 4  (Pump chirp is the pump output itself; no separate buzzer GPIO)
-   |                                       |
-   |  GND ---------------------------------+---> Common Ground Rail
-   +---------------------------------------+
+USB-C 5 V → ESP32-S3
+
+GPIO 12 ──[ 220 Ω ]──► green LED anode ──► GND     Zone 1 (Ch 0)
+GPIO 4  ──[ 220 Ω ]──► red LED anode   ──► GND     Pump (Ch 4); shower chirp is this LED
+GND ── common LED cathode rail
 ```
 
-### 2.2 Remote Unit (Seeed XIAO ESP32-C6) Schematic
+Do not wire a third LED to GPIO 38 or 48.
+
+### 2.2 Entrance remote (XIAO ESP32-C6)
+
+Diode-OR: **anode to the D0 bus**, **cathode to the sense pin**. Pressing a button pulls the sense pin and the bus to GND.
 
 ```
-       2x AA Batteries (~3.0V)
-           (+) --------------------------------> XIAO ESP32-C6 Pin 3V3
-           (-) --------------------------------> XIAO ESP32-C6 Pin GND
+USB-C 5 V → XIAO          (do not connect 2×AA to 3V3)
 
-       WAKEUP & BUTTON MATRIX:
+3V3 ──[ 47 kΩ ]──┬──────── D0 (GPIO 0) wakeup bus
+                 │
+    Zone1 ──|<|──┤   cathode to D3, other button pin to GND
+    Zone2 ──|<|──┤   cathode to D4
+    Zone3 ──|<|──┤   cathode to D5
+    Zone4 ──|<|──┤   cathode to D6
+    Pump  ──|<|──┤   cathode to D7
+    Night ──|<|──┤   cathode to D8
+    EncSW ──|<|──┘   cathode to D9
 
-       3V3 Rail ---[ 47k Pull-up ]---+
-                                     |
-                                     +---------> XIAO Pin D0 (LP-GPIO 0: WAKEUP BUS)
-                                     |
-       Button 1 (Zone 1)   ---|--|<|-+ (Diode D1: Cathode to Button, Anode to Bus)
-       Button 2 (Zone 2)   ---|--|<|-+ (Diode D2: Cathode to Button, Anode to Bus)
-       Button 3 (Pump)     ---|--|<|-+ (Diode D3: Cathode to Button, Anode to Bus)
-       Encoder Push Button ---|--|<|-+ (Diode D4: Cathode to Button, Anode to Bus)
+EC11 A (CLK) → D1 (GPIO 1)
+EC11 B (DT)  → D2 (GPIO 2)
+EC11 COM     → GND
 
-       SENSE PINS (Active LOW when button is pressed):
-       Button 1 Output ----> XIAO Pin D1 (GPIO 1)
-       Button 2 Output ----> XIAO Pin D2 (GPIO 2)
-       Button 3 Output ----> XIAO Pin D3 (GPIO 21)
-       Encoder Push    ----> XIAO Pin D6 (GPIO 19)
-
-       ROTARY ENCODER (EC11):
-       Terminal A (CLK) ---> XIAO Pin D4 (GPIO 22)
-       Terminal B (DT)  ---> XIAO Pin D5 (GPIO 23)
-       Terminal C (COM) ---> GND
-
-       STATUS MICRO-LED:
-       XIAO Pin D7 (GPIO 20) ---> [ 220 Ω ] ---> Anode (+) Green LED ---> GND
+D10 (GPIO 18) ──[ 220 Ω ]──► status LED anode ──► GND
 ```
 
-### 2.3 Phase A Pin-by-Pin Connection Table
+Minimum set if you are short on buttons: Zone 1, pump, night, encoder (plus diodes on those three buttons and EncSW).
 
-| Subsystem | Source Component | Pin | Target Component | Pin | Purpose |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Central** | USB-C Port | VBUS | PC / USB Charger | USB | Powers ESP32-S3 with clean 5.0V |
-| **Central** | ESP32-S3 | `GPIO 12` | Resistor 220 Ω | Pin 1 | Simulates Zone 1 Dimmer output |
-| **Central** | Resistor 220 Ω | Pin 2 | 5mm Green LED | Anode (+) | Visual PWM dimming indicator |
-| **Central** | 5mm Green LED | Cathode (-) | ESP32-S3 | `GND` | Ground return |
-| **Central** | ESP32-S3 | `GPIO 4` | Resistor 220 Ω | Pin 1 | Simulates Water Pump output |
-| **Central** | Resistor 220 Ω | Pin 2 | 5mm Red LED | Anode (+) | Visual Water Pump indicator |
-| **Central** | 5mm Red LED | Cathode (-) | ESP32-S3 | `GND` | Ground return |
-| **Central** | ESP32-S3 | `GPIO 4` | Resistor 220 Ω | Pin 1 | Pump / shower chirp (same output) |
-| **Central** | Resistor 220 Ω | Pin 2 | 5mm Yellow LED | Anode (+) | Visual Shower Mode chirp indicator |
-| **Central** | 5mm Yellow LED | Cathode (-) | ESP32-S3 | `GND` | Ground return |
-| **Remote** | 2x AA Battery Holder | `+` (Red) | XIAO ESP32-C6 | `3V3` | Pure 3.0V supply (bypasses LDO) |
-| **Remote** | 2x AA Battery Holder | `-` (Black)| XIAO ESP32-C6 | `GND` | Common ground |
-| **Remote** | 3V3 Rail | `3V3` | Resistor 47 kΩ | Pin 1 | Pull-up for Diode-OR wakeup line |
-| **Remote** | Resistor 47 kΩ | Pin 2 | XIAO ESP32-C6 | `D0` (LP_GPIO0)| Wakeup Bus input |
-| **Remote** | Diode D1..D4 | Anodes | Wakeup Bus | `D0` | Combined wakeup trigger |
-| **Remote** | Diode D1 | Cathode | Button 1 & XIAO | `D1` (GPIO 1) | Zone 1 sense line |
-| **Remote** | Diode D2 | Cathode | Button 2 & XIAO | `D2` (GPIO 2) | Zone 2 sense line |
-| **Remote** | Diode D3 | Cathode | Button 3 & XIAO | `D3` (GPIO 21)| Water Pump sense line |
-| **Remote** | Diode D4 | Cathode | Encoder Push & XIAO| `D6` (GPIO 19)| Encoder button sense line |
-| **Remote** | Buttons 1..3 & SW | Other Pin | XIAO ESP32-C6 | `GND` | Pulled to GND when pressed |
-| **Remote** | EC11 Encoder | Pin A (CLK) | XIAO ESP32-C6 | `D4` (GPIO 22)| Quadrature phase A |
-| **Remote** | EC11 Encoder | Pin B (DT) | XIAO ESP32-C6 | `D5` (GPIO 23)| Quadrature phase B |
-| **Remote** | EC11 Encoder | Pin C (COM) | XIAO ESP32-C6 | `GND` | Common ground |
-| **Remote** | XIAO ESP32-C6 | `D7` (GPIO 20)| Resistor 220 Ω | Pin 1 | Remote status feedback LED |
+### 2.3 Pin table
+
+| From | Pin | To | Pin | Notes |
+| :--- | :--- | :--- | :--- | :--- |
+| USB | VBUS | ESP32-S3 | USB-C | Central 5 V |
+| ESP32-S3 | GPIO 12 | 220 Ω → green LED | anode | Zone 1 |
+| ESP32-S3 | GPIO 4 | 220 Ω → red LED | anode | Pump + shower chirp |
+| USB | VBUS | XIAO | USB-C | Remote 5 V. Not 3V3. |
+| XIAO 3V3 | 3V3 | 47 kΩ | one end | Pull-up only |
+| 47 kΩ | other end | XIAO | D0 | Wake bus |
+| Each button / EncSW | one side | GND | | Active low |
+| Each button / EncSW | other side | diode cathode + sense silk | D3–D9 as above | |
+| Diode anodes | | D0 bus | | |
+| EC11 | A / B / COM | D1 / D2 / GND | | No diodes on A/B |
+| XIAO | D10 | 220 Ω → LED | anode | Status flash |
 
 ---
 
-### 2.4 Phase A Step-by-Step Validation Protocol
+## 3. Phase A protocol
 
-#### Step A1: Firmware Build & Flash
-1. Connect ESP32-S3 to computer via USB-C. Flash Central:
-   ```bash
-   pio run -d firmware/central -t upload
-   ```
-2. Connect XIAO ESP32-C6 to computer via USB-C. Flash Remote:
-   ```bash
-   pio run -d firmware/remote -t upload
-   ```
-3. Open serial monitors:
-   ```bash
-   pio device monitor -d firmware/central
-   pio device monitor -d firmware/remote
-   ```
+### A1 — Build and flash
 
-#### Step A2: ESP-NOW Wireless Pairing & Anti-Replay Verification
-1. Tap Button 1 on the Remote breadboard.
-2. In the Remote serial terminal, verify:
-   ```
-   [Remote] Button 0 CLICK -> Sending packet seq=1
-   ```
-3. In the Central serial terminal, verify instant reception (< 12 ms):
-   ```
-   [Central] Received packet from Remote 1, Button 0, Action: Click, RSSI: -42 dBm
-   [Central] Channel 0 (Zone 1) toggled -> ON (Brightness: 255)
-   ```
-4. Observe the **Green LED on GPIO 12**: It turns ON instantly.
-5. Tap Button 1 again: Verify Central receives `seq=2` and turns the Green LED OFF.
-6. Verify anti-replay: Replaying an old sequence number packet will be rejected with `Sequence out of window (RFC 6479)`.
+From the repo root, on this branch:
 
-#### Step A3: Smooth 200 Hz LEDC PWM Dimming & Encoder Ramping
-1. Tap Button 1 to turn Zone 1 ON (Green LED lit).
-2. Rotate the **EC11 rotary knob** clockwise:
-   - Observe the Green LED brightness smoothly increasing.
-   - The Central LEDC driver updates duty cycle in 1% steps.
-3. Rotate counter-clockwise:
-   - Observe the Green LED smoothly dimming down to 1% without extinguishing.
-4. Press and hold Button 1 for > 500 ms:
-   - Verify continuous hold-ramping dimmer mode (emits keep-alive packets every 150 ms).
-   - The LED ramps brightness smoothly up and down. Release button to lock brightness.
+```bash
+pio test -d firmware/central -e native
+pio test -d firmware/remote -e native
 
-#### Step A4: Shower Mode Acoustic Chirp & Water Pump Timer
-1. Tap Button 3:
-   - The **Red LED on GPIO 4** (Water Pump) turns ON.
-   - Tap Button 3 again: Red LED turns OFF.
-2. **Double-click Button 3** (within 350 ms):
-   - Shower Mode activates!
-   - Observe the **Yellow LED on GPIO 48** (Acoustic Chirp): It executes the exact two-pulse acoustic pattern:
-     `150 ms ON -> 120 ms PAUSE -> 150 ms ON -> 120 ms PAUSE -> OFF`
-   - The Red LED turns ON and runs on the 5-minute safety countdown.
-3. Tap Button 3 once during Shower Mode: Verify it cancels immediately and turns the Red LED OFF.
-
-#### Step A5: Non-Volatile Storage (NVS) State Persistence
-1. Set Zone 1 to 40% brightness. Turn Zone 2 ON.
-2. Unplug the USB-C cable from the Central ESP32-S3 (simulating van power loss / brownout).
-3. Re-plug the USB-C cable.
-4. In the Central serial monitor, verify:
-   ```
-   [NVS] Restoring channel 0: ON, brightness=102 (40%)
-   [NVS] Restoring channel 4: OFF (Safety Policy: restoreOnBoot=false)
-   ```
-5. The Green LED immediately lights up at exactly 40% brightness, and the Red LED (pump) remains safely OFF.
-
-#### Step A6: Ultra-Low-Power Deep Sleep Current Measurement (~15 µA)
-1. Disconnect USB-C from the Remote XIAO ESP32-C6.
-2. Set your digital multimeter to **µA DC mode**.
-3. Wire the multimeter in series between the 2x AA battery (+) terminal and the XIAO `3V3` pin:
-   ```
-   Battery (+) ---> Multimeter RED probe
-   Multimeter BLACK probe ---> XIAO ESP32-C6 pin 3V3
-   Battery (-) ---> XIAO ESP32-C6 pin GND
-   ```
-4. Observe the quiescent current on the DMM:
-   - **Active Wake (Button press & RF transmit):** 30–45 mA for ~180 ms.
-   - **Deep Sleep:** **14.2 µA – 17.8 µA**.
-5. Press Button 1: Current briefly spikes to ~35 mA, the Central responds, and current instantly collapses back to **~15 µA**.
-6. This confirms battery life of **> 2.5 years** on two standard AA cells.
-
----
-
-## 3. Phase B: 12V Automotive Power & Load Switching Stage
-
-Once you have completed Phase A and have access to a 12V power source, proceed to Phase B.
-
-### 3.1 Safe Ways to Obtain 12V for Bench Testing (Without Risking the Van)
-1. **Old 12V Wall Power Adapter (Recommended):** An unused 12V 1A–2A power brick from a discarded Wi-Fi router, TV set-top box, or external hard drive. These adapters are isolated, current-limited, and safe to use on a breadboard.
-2. **Standard 9V Battery (PP3 / 6F22):** A small 9V transistor battery can power the MP1584EN buck converter and the 100k/18k voltage divider with zero risk of damage.
-3. **Bench Power Supply:** Set output to 12.0V with current limit set to 1.0A.
-4. **Fused Van Battery:** If using the vehicle battery, **always wire an inline 5A blade fuse** right at the positive terminal before running wires to the breadboard.
-
----
-
-### 3.2 Phase B Central Controller Wiring (12V Integration)
-
-```
-                       +-------------------------------+
-       +12V Source ----| IN+      MP1584EN        OUT+ |---+ (+5.0V Regulated)
-       GND  Source ----| IN-   (Tuned to 5.0V)    OUT- |---| (GND Return)
-                       +-------------------------------+   |
-                                                           |
-          +------------------------------------------------+
-          |
-          |         LONELY BINARY ESP32-S3 N16R8
-          |         +---------------------------+
-          +-------->| 5V (or VIN)               |
-          +-------->| GND                       |
-                    |                           |
-                    |    GPIO 12 (PWM Zone 1)   |---> 1k ---> Gate (LR7843 MOSFET Module)
-                    |    GPIO 4  (Water Pump)   |---> IN1 (PROFET / MOSFET Module)
-                    |    GPIO 21 (Inverter Dry) |---> IN1 (PC817 Optocoupler Module)
-                    |    GPIO 48 (Status/Buzzer)|---> 220R -> Anode (+) Buzzer / LED -> GND
-                    |                           |
-                    |    GPIO 1  (Battery ADC)  |<---+
-                    +---------------------------+    |
-                                                     |
-  +12V Battery Bus ----[ 100k (1%) ]---+             |
-                                       |             |
-                                       +---[ 1k ]----+
-                                       |
-                                       +---[ 18k (1%) ]---> GND
-                                       |
-                                       +---[ 100nF ]------> GND
-
-  HIGH-CURRENT 12V LOAD SWITCHING:
-  +12V Bus ----------+-------------------------+
-                     |                         |
-               [ +12V LED Strip ]        [ 12V Water Pump ]
-                     |                         |   ^
-                     |                         |   | 1N5408 Diode (Cathode to +12V)
-                     v                         v   |
-               Drain (LR7843)            Drain (PROFET / MOSFET)
-                     |                         |
-               Source to GND             Source to GND
+pio run -d firmware/central -e esp32-s3-devkitc-1 -t upload
+pio run -d firmware/remote -e seeed_xiao_esp32c6 -t upload
 ```
 
+Serial (115200):
+
+```bash
+pio device monitor -d firmware/central -e esp32-s3-devkitc-1
+pio device monitor -d firmware/remote -e seeed_xiao_esp32c6
+```
+
+Central should print `Starting VanNOW Central Controller...` then `System initialized. Awaiting wireless ESP-NOW commands.` and `Central MAC Address: AA:BB:CC:DD:EE:FF`.
+
+The remote flashes D10 once on a cold boot, then sleeps. After a button wake it prints `Remote active. Listening for physical input transitions.`
+
+If the remote never wakes, the diode-OR or D0 pull-up is wrong. If the central prints `Rejected packet: sender MAC address not in allow-list`, the remote image is not `REMOTE_ID=1` (you flashed cockpit).
+
+### A2 — Link and Zone 1
+
+1. Tap Zone 1 (D3).
+2. Remote: `Sending payload: Remote 1 | Btn 0 | Act 0 | Steps 0 | Bat …`
+3. Central:
+
+```
+--- Message from [AA:BB:CC:DD:EE:11] ---
+Remote ID: 1 | Button: 0 | Action: 0 | Seq: …
+Channel [Lights Zone 1] (Index 0) state updated.
+```
+
+4. Green LED on GPIO 12 turns on (default restore brightness is 80% if NVS is empty).
+5. Tap Zone 1 again: LED off, `Seq` increments.
+
+Action numbers: `0` Click, `1` StartHold, `3` EncoderTurn, `4` DoubleClick.
+
+### A3 — Encoder focus dimming
+
+1. Turn Zone 1 on.
+2. Rotate the EC11: green LED should ramp. Central `Button: 7` and `Action: 3`.
+3. Click the encoder shaft: LED goes to 100%. Central: `Encoder boost: channel [Lights Zone 1] set to 100%`.
+4. Tap Zone 2 (if wired), then rotate: dimming follows Zone 2, not Zone 1.
+5. Hold Zone 1 > 500 ms: keep-alive `StartHold` (`Action: 1`) every ~150 ms; brightness ramps. Release to lock.
+
+The encoder SW must be **only** on D9. Do not also jumper it to a zone pin.
+
+### A4 — Pump, shower, night
+
+1. Tap pump (D7, button 4): red LED on GPIO 4 on; tap again: off.
+2. Double-tap pump within ~320 ms: `[Shower Mode] Activated: 300000 ms with acoustic chirp`. The **red** LED does two short pulses, then stays on. Remote D10 flashes three times.
+3. Further holds during shower print `[Shower Mode] Keep-alive ignored; use Click to cancel.`
+4. Single tap pump: shower cancels, red LED off.
+5. Turn Zone 1 on, tap night (D8, button 5): `Action: Turn off all dimmable lights`. Green off; pump unchanged.
+
+Pump safety auto-off is **10 min** (`restoreOnBoot=false`). Shower timer is **5 min**.
+
+### A5 — NVS
+
+1. Set Zone 1 to a visible mid brightness (encoder or hold). Leave pump off.
+2. Unplug central USB. Plug back in.
+3. Expect `[NVS] Restored dimmable channel 0 (Lights Zone 1) ON at N%` and the green LED at that level. Pump stays off.
+
+Brightness in logs is **0–100**, not 0–255.
+
+### A6 — Sleep current (optional, after A2–A5)
+
+Do **not** inject 2×AA into `3V3`.
+
+1. Disconnect XIAO USB.
+2. Power the XIAO **5V** pin from 4.5–5.0 V (3×AA alkaline or a small USB pack) with the DMM in series on the positive lead. GND to XIAO GND.
+3. After 1.5 s idle the remote prints `Entering Deep Sleep mode now.`
+4. Expect **tens to hundreds of µA** on a breadboard (XIAO LDO + leakage). The ~15 µA chip figure will not show up here.
+5. A press should spike to tens of mA, then collapse again.
+
+Skip A6 if you only have 2×AA and no 4.5–5 V source.
+
 ---
 
-### 3.3 Phase B Validation Protocol
+## 4. Phase B — 12 V
 
-#### Step B1: MP1584EN DC-DC Buck Regulator Calibration
-1. **CRITICAL SAFETY STEP:** **DO NOT connect the ESP32-S3 yet.**
-2. Connect your 12V source to MP1584EN `IN+` and `IN-`.
-3. Measure `OUT+` with your multimeter in DC Volts mode.
-4. Using a small flathead screwdriver, slowly turn the brass trimmer potentiometer until the output reads **5.00V ± 0.05V**.
-5. Disconnect 12V power. Now connect `OUT+` to ESP32-S3 `5V` and `OUT-` to `GND`.
-6. Reapply 12V. Verify the ESP32-S3 boots cleanly from the buck converter.
+Start only after A2–A5 pass. Fuse the +12 V lead at the source.
 
-#### Step B2: Precision Battery Voltage Divider Calibration (GPIO 1)
-1. Connect the 100 kΩ / 18 kΩ divider to the 12V bus and GPIO 1 as shown in the schematic.
-2. Measure actual 12V source voltage with DMM: e.g., V_in = 12.50V.
-3. Measure scaled voltage at GPIO 1:
-   V_GPIO1 = 12.50V * (18 kΩ / (100 kΩ + 18 kΩ)) = 1.907V
-4. Open the Central serial monitor. Verify the reported cabin battery voltage matches your DMM within 1.5%:
-   ```
-   [Telemetry] Cabin Battery = 12.51V (ADC raw: 1912)
-   ```
+### 4.1 Buck first (no ESP32 connected)
 
-#### Step B3: High-Current Logic-Level MOSFET Switching & Thermal Check
-1. Connect a 12V LED strip segment to the LR7843 MOSFET module.
-2. Drive the gate from GPIO 12 with the 200 Hz PWM dimmer.
-3. Turn Zone 1 to 100% brightness. Let it run for 10 minutes.
-4. Touch the LR7843 MOSFET: It should remain **cool to the touch (< 35°C)**.
-   *(Note: An improper MOSFET like the IRF520 would overheat because 3.3V logic cannot saturate its gate).*
+1. 12 V → MP1584 `IN+` / `IN-`.
+2. Adjust the trimmer to **5.00 V ± 0.05 V** on `OUT+`.
+3. Remove 12 V. Then `OUT+` → ESP32-S3 `5V`, `OUT-` → `GND`.
+4. Re-apply 12 V. Central must boot as in A1. USB-C can stay disconnected.
 
-#### Step B4: Inductive Flyback Diode Verification (1N5408)
-1. Connect a 12V inductive load (pump motor or relay) to Channel 4.
-2. Ensure the **1N5408 diode is connected in parallel with the load** (Cathode to +12V, Anode to the switched negative side).
-3. If an oscilloscope is available, probe the switched negative line:
-   - When Channel 4 turns OFF, verify the inductive voltage spike is clamped to **< 13.5V**.
-   - If no oscilloscope is available, toggle the pump 20 times rapidly. The MOSFET/driver must not degrade or fail.
+### 4.2 Battery ADC (GPIO 1)
 
-#### Step B5: Optocoupler Galvanic Isolation (PC817)
-1. Connect GPIO 21 to the PC817 input channel.
-2. Connect your multimeter in **Continuity / Resistance mode** across the PC817 output pins (Pins 3 and 4).
-3. Send Inverter toggle command from the Remote:
-   - **Inverter ON:** Multimeter beeps / resistance drops to < 5 Ω.
-   - **Inverter OFF:** Resistance reads open circuit (OL / > 10 MΩ).
-4. Verify complete electrical isolation: No continuity exists between the ESP32 ground and the PC817 output terminals.
+```
++12 V ──[ 100 kΩ 1% ]──┬──[ 1 kΩ ]── GPIO 1
+                       ├──[ 18 kΩ 1% ]── GND
+                       └──[ 100 nF ]──── GND
+```
+
+At 12.50 V the GPIO node is `12.50 × 18 / 118 ≈ 1.91 V`. Heartbeat line: `[Heartbeat] Central Active | Cabin Battery: … V`.
+
+### 4.3 Zone 1 MOSFET (bench low-side only)
+
+GPIO 12 → MOSFET module IN (or 1 kΩ to gate). Isolated 12 V LED strip between +12 V and drain; source to GND. 200 Hz dimming. After 10 min at 100% the logic-level FET should stay cool. An IRF520 will get hot at 3.3 V gate — do not use one.
+
+### 4.4 Pump flyback
+
+Inductive source on Ch 4 (GPIO 4). **1N5408 across the load**: cathode to +12 V, anode to the switched node. Toggle twenty times. Scope (optional): spike clamped near the rail.
+
+### 4.5 Optocoupler (inverter sim)
+
+GPIO **21** (Ch 14) → PC817 LED input. Continuity on the output: closed when the channel is on, open when off. No continuity from ESP32 GND to the output pins.
+
+Cockpit SW5 is what drives this channel in the van. On this entrance breadboard, GPIO 21 only changes if you send a cockpit packet or drive the pin from a temporary mapping. For a first bench check you may jumper a momentary 3.3 V into the PC817 input through its module resistor, or add a one-line test mapping later. Do not use GPIO 15 (that is Zone 4 PWM).
 
 ---
 
-## 4. Pre-Manufacturing Sign-Off Matrix
+## 5. Sign-off (before any PCB order)
 
-Before submitting Gerber files to JLCPCB or PCBWay, ensure all items below are checked:
-
-| Test Item | Pass Criteria | Phase A Verified | Phase B Verified |
+| Test | Pass | A | B |
 | :--- | :--- | :---: | :---: |
-| **ESP-NOW RF Link** | 0 dropped packets over 10 meters | [ ] | [ ] |
-| **Remote Deep Sleep** | Quiescent current <= 18 µA on 2x AA | [ ] | N/A |
-| **Diode-OR Wakeup** | Wakes MCU in < 2 ms upon keypress | [ ] | N/A |
-| **Dimmer PWM Response** | Smooth 1% brightness fading at 200 Hz | [ ] | [ ] |
-| **NVS Persistence** | Restores lights, keeps pump OFF after boot | [ ] | [ ] |
-| **Safety Auto-Off** | Water pump cuts off automatically at 10 min | [ ] | [ ] |
-| **5V Buck Rail** | MP1584 delivers 5.00V ± 0.05V | N/A | [ ] |
-| **ADC Telemetry** | Reading accurate within ± 1.5% vs DMM | N/A | [ ] |
-| **Flyback Clamp** | 1N5408 clamps inductive kickback < 14V | N/A | [ ] |
-| **MOSFET Gate Saturation** | LR7843 runs cool (< 35°C) at full load | N/A | [ ] |
-| **Optocoupler Isolation** | PC817 dry contact switches cleanly | [ ] | [ ] |
+| ESP-NOW entrance → central | Button 0 toggles GPIO 12; seq increases | [ ] | [ ] |
+| Diode-OR wake | Sleeps, wakes on Zone 1 / pump / EncSW | [ ] | — |
+| Encoder | Button 7 dims focus zone; click = 100% | [ ] | [ ] |
+| Shower | Double-click pump; GPIO 4 chirps; click cancels | [ ] | [ ] |
+| Night | Button 5 clears dimmers; pump stays | [ ] | [ ] |
+| NVS | Lights restore; pump stays off | [ ] | [ ] |
+| No GPIO 9 / 38 / 48 LEDs | Status on D10; no RGB pins used | [ ] | [ ] |
+| Sleep current | Optional; not via 3V3 | [ ] | — |
+| Buck 5.00 V ± 0.05 V | Before connecting the S3 | — | [ ] |
+| ADC ± 1.5% vs DMM | GPIO 1 divider | — | [ ] |
+| FET cool at full PWM | LR7843 / D4184, not IRF520 | — | [ ] |
+| Flyback | 1N5408 on pump load | — | [ ] |
+| PC817 isolation | GPIO 21 path; output isolated | — | [ ] |
+
+Still open after a green sheet (do not treat as van-ready): Phoenix MPT 0.5 vs pump inrush (H-11), DevKit RGB vs Ch 15/21 (H-09), hardcoded ESP-NOW keys (FW-16), 11-ch vs 24-ch PCB identity.
