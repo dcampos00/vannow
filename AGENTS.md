@@ -52,7 +52,7 @@ Before implementing firmware modifications or hardware schematic revisions, agen
 ### 1. Mandatory Pre-Implementation Reading
 - **Hardware & Electrical Constraints:** [`docs/logic_audit_2026-09-11.md`](docs/logic_audit_2026-09-11.md) (Active audit: 11ch vs 24ch identity split, Shower Mode keep-alive oscillation, encoder dual-dispatch, XIAO D10/GPIO9). Historical closed blockers: [`docs/logic_audit_2026-09-03.md`](docs/logic_audit_2026-09-03.md) (DevKit socket short, 5 kHz PWM, Zener leakage).
 - **Physical Safety & Inductive Loads:** [`docs/analisis_critico_riesgos.md`](docs/analisis_critico_riesgos.md) (1N5408 pump flyback, PC817 diesel heater & fridge compressor control, external ON-OFF-AUTO bypass toggles).
-- **Firmware Architecture & State Machines:** [`docs/firmware_documentation.md`](docs/firmware_documentation.md) (Unified specification of classes, FSMs, 200 Hz LEDC PWM, and binary matrix decoding).
+- **Firmware Architecture & State Machines:** [`docs/firmware_documentation.md`](docs/firmware_documentation.md) (Unified specification of classes, FSMs, 200 Hz LEDC PWM, and binary matrix decoding). Central channel count is `VANNOW_CHANNEL_PROFILE` (24 default, 11 legacy).
 - **Mechanical & Spatial Clearances:** [`docs/mechanical_and_enclosure_specs.md`](docs/mechanical_and_enclosure_specs.md) (230x190x85 mm cabinet envelope, 50 mm wiring drop, magnetic dockable remote retention).
 
 ### 2. Documentation Index by Functional Domain

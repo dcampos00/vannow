@@ -15,7 +15,7 @@ Two phases:
 
 | Item | Value |
 | :--- | :--- |
-| Central firmware | 24 channels. Zone 1 = **GPIO 12**, pump = **GPIO 4**. |
+| Central firmware | Default **24** channels (`-e esp32-s3-devkitc-1`). Zone 1 = **GPIO 12**, pump = **GPIO 4**. Legacy 11-ch PCB: `-e esp32-s3-profet-11ch`. |
 | Remote image | Entrance only: `seeed_xiao_esp32c6` (`REMOTE_ID=1`). Do **not** flash `cockpit_xiao_esp32c6` on this breadboard. |
 | Encoder | Button index **7**. Turn dims the last focused lighting zone. Click sets that zone to **100%**. |
 | Shower | **5 min** on the pump only. Double-click (or first hold) on **button 4**. Cancel with a single click. Chirp is the **pump output** (GPIO 4), not a buzzer pin. |

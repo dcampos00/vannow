@@ -1,6 +1,8 @@
 # Cross-Domain Co-Design Verification Matrix
 
-Authoritative 24-channel mapping after the 2026-09-11 logic audit. The 11-channel PROFET carrier (`VanCentralControllerPROFET`) is a legacy breadboard-scale design and must not be flashed with this firmware table.
+Authoritative **24-channel** mapping after the 2026-09-11 logic audit (`VANNOW_CHANNEL_PROFILE=24`, env `esp32-s3-devkitc-1`).
+
+The 11-channel PROFET carrier (`VanCentralControllerPROFET`, 150×95 mm) is legacy. Flash it only with `pio run -d firmware/central -e esp32-s3-profet-11ch` (`VANNOW_CHANNEL_PROFILE=11`). Do not put the 24-ch image on that board.
 
 ---
 

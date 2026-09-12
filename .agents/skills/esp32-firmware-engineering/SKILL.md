@@ -8,7 +8,7 @@ description: >-
 
 # ESP32 Firmware Engineering (VanNOW)
 
-Authoritative workflow for `firmware/central` (ESP32-S3 DevKitC-1 N16R8) and `firmware/remote` (Seeed XIAO ESP32-C6). Production identity is the **24-channel** map. Do not flash that firmware onto the legacy 11-channel PROFET carrier.
+Authoritative workflow for `firmware/central` (ESP32-S3 DevKitC-1 N16R8) and `firmware/remote` (Seeed XIAO ESP32-C6). **Alpha** target is the **24-channel** map (`VANNOW_CHANNEL_PROFILE=24`). Legacy 11-ch carrier: `-e esp32-s3-profet-11ch` only.
 
 Pin/channel tables: [co_design_verification_matrix.md](../cross-domain-sync/references/co_design_verification_matrix.md).
 
@@ -36,7 +36,8 @@ Pin/channel tables: [co_design_verification_matrix.md](../cross-domain-sync/refe
 ```bash
 pio test -d firmware/central -e native
 pio test -d firmware/remote -e native
-pio run -d firmware/central -e esp32-s3-devkitc-1
+pio run -d firmware/central -e esp32-s3-devkitc-1         # 24-ch (alpha default)
+pio run -d firmware/central -e esp32-s3-profet-11ch       # legacy 11-ch PROFET only
 pio run -d firmware/remote -e seeed_xiao_esp32c6          # REMOTE_ID=1 entrance
 pio run -d firmware/remote -e cockpit_xiao_esp32c6        # REMOTE_ID=3 cockpit
 ```
@@ -71,4 +72,4 @@ Entrance buttons (faceplate order): 0–3 zones, 4 pump, 5 night. Build flag `CO
 - [ ] Encoder events use button 7; GPIO 20 has one owner
 - [ ] Cockpit changes use latching mode and `REMOTE_ID 3`
 - [ ] `pio test -e native` passes on both projects
-- [ ] Target env matches the board (`esp32-s3-devkitc-1` / `seeed_xiao_esp32c6` / `cockpit_xiao_esp32c6`)
+- [ ] Target env matches the board (`esp32-s3-devkitc-1` / `esp32-s3-profet-11ch` / `seeed_xiao_esp32c6` / `cockpit_xiao_esp32c6`)

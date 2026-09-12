@@ -45,6 +45,7 @@ pio test -d firmware/remote -e native
 ```
 
 4. **CAD** — `pcb_length` / `pcb_width` / hole pitch in `generate_enclosures.py` must match the PCB just routed.
+5. **Central flash env** — `esp32-s3-devkitc-1` = 24-ch. `esp32-s3-profet-11ch` = legacy 11-ch. Never mix.
 
 ---
 
