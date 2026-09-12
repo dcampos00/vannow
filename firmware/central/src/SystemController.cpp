@@ -1,7 +1,7 @@
 #include "SystemController.h"
 #include <string.h>
 
-const ChannelConfig SystemController::DEFAULT_24CH_CONFIG[DEFAULT_CHANNEL_COUNT] = {
+const ChannelConfig SystemController::DEFAULT_24CH_CONFIG[DEFAULT_24CH_COUNT] = {
     // 14 High-Side Power Channels (12V PROFET BTS5008)
     {"Lights Zone 1",            12, ChannelType::Dimmable,       0,      true,  80, false}, // Ch 0
     {"Lights Zone 2",            13, ChannelType::Dimmable,       0,      true,  80, false}, // Ch 1
@@ -29,6 +29,22 @@ const ChannelConfig SystemController::DEFAULT_24CH_CONFIG[DEFAULT_CHANNEL_COUNT]
     {"Aux Signal 1 (Alarm)",     48, ChannelType::Digital,        0,     false,   0, false}, // Ch 21
     {"Aux Signal 2 (LPG Valve)",  2, ChannelType::Digital,        0,     false,   0, false}, // Ch 22
     {"Aux Signal 3 (Gen Start)", 16, ChannelType::MomentaryPulse, 500,   false,   0, false}  // Ch 23 (500ms momentary pulse)
+};
+
+// Legacy 11-channel VanCentralControllerPROFET carrier (150x95 mm).
+// GPIO 2 / 16 are cabin/remote status LEDs on that board — not load channels.
+const ChannelConfig SystemController::DEFAULT_11CH_CONFIG[DEFAULT_11CH_COUNT] = {
+    {"Lights Zone 1",            12, ChannelType::Dimmable,       0,      true,  80, false}, // Ch 0
+    {"Lights Zone 2",            13, ChannelType::Dimmable,       0,      true,  80, false}, // Ch 1
+    {"Lights Zone 3",            14, ChannelType::Dimmable,       0,      true,  80, false}, // Ch 2
+    {"Lights Zone 4",            15, ChannelType::Dimmable,       0,      true,  80, false}, // Ch 3
+    {"Water Pump",                4, ChannelType::Digital,   600000,     false,   0, false}, // Ch 4
+    {"Exterior Driver Light",     5, ChannelType::Digital,        0,      true,   0, false}, // Ch 5
+    {"Aux Power 2",               6, ChannelType::Digital,        0,      true,   0, false}, // Ch 6
+    {"Aux Power 3",               7, ChannelType::Digital,        0,      true,   0, false}, // Ch 7
+    {"Maxxair Fan Power",        17, ChannelType::Digital,        0,      true,   0, false}, // Ch 8 discrete FET
+    {"Inverter (Multiplus II)",  21, ChannelType::Digital,        0,      true,   0, false}, // Ch 9
+    {"DC-DC Orion-XS #1",        18, ChannelType::Digital,        0,      true,   0, false}, // Ch 10 (GPIO 18 opto)
 };
 
 const RemoteMapping SystemController::DEFAULT_REMOTE_MAPPINGS[20] = {
@@ -60,9 +76,50 @@ const RemoteMapping SystemController::DEFAULT_REMOTE_MAPPINGS[20] = {
 
 const size_t SystemController::DEFAULT_REMOTE_MAPPING_COUNT = 19;
 
+const RemoteMapping SystemController::DEFAULT_11CH_REMOTE_MAPPINGS[20] = {
+    {1, 0, 0, SpecialRemoteAction::None},
+    {1, 1, 1, SpecialRemoteAction::None},
+    {1, 2, 2, SpecialRemoteAction::None},
+    {1, 3, 3, SpecialRemoteAction::None},
+    {1, 4, 4, SpecialRemoteAction::None},
+    {1, 5, -1, SpecialRemoteAction::TurnOffAllLights},
+
+    {2, 0, 2, SpecialRemoteAction::None},
+    {2, 1, 3, SpecialRemoteAction::None},
+    {2, 2, 8, SpecialRemoteAction::None},
+    {2, 3, -1, SpecialRemoteAction::TurnOffAllLights},
+    {2, 4, 0, SpecialRemoteAction::None},
+    {2, 5, 1, SpecialRemoteAction::None},
+    {2, 6, 4, SpecialRemoteAction::None},
+
+    // Cockpit: Orion is Ch 10 and inverter is Ch 9 on the 11-ch carrier
+    {3, 0, 5, SpecialRemoteAction::None},
+    {3, 1, 10, SpecialRemoteAction::None},
+    {3, 2, 0, SpecialRemoteAction::None},
+    {3, 3, 4, SpecialRemoteAction::None},
+    {3, 4, 9, SpecialRemoteAction::None},
+    {3, 5, 8, SpecialRemoteAction::None}
+};
+
+const size_t SystemController::DEFAULT_11CH_REMOTE_MAPPING_COUNT = 19;
+
+uint8_t SystemController::compiledChannelProfile() {
+#if VANNOW_CHANNEL_PROFILE == 11
+    return 11;
+#else
+    return 24;
+#endif
+}
+
 SystemController::SystemController()
-    : SystemController(DEFAULT_24CH_CONFIG, DEFAULT_CHANNEL_COUNT,
-                       DEFAULT_REMOTE_MAPPINGS, DEFAULT_REMOTE_MAPPING_COUNT) {}
+#if VANNOW_CHANNEL_PROFILE == 11
+    : SystemController(DEFAULT_11CH_CONFIG, DEFAULT_11CH_COUNT,
+                       DEFAULT_11CH_REMOTE_MAPPINGS, DEFAULT_11CH_REMOTE_MAPPING_COUNT)
+#else
+    : SystemController(DEFAULT_24CH_CONFIG, DEFAULT_24CH_COUNT,
+                       DEFAULT_REMOTE_MAPPINGS, DEFAULT_REMOTE_MAPPING_COUNT)
+#endif
+{}
 
 SystemController::SystemController(const ChannelConfig* channelConfigs, size_t channelCount,
                                    const RemoteMapping* remoteMappings, size_t mappingCount)
@@ -83,7 +140,9 @@ SystemController::SystemController(const ChannelConfig* channelConfigs, size_t c
     // Register remote mappings
     if (remoteMappings && mappingCount > 0) {
         setRemoteMappings(remoteMappings, mappingCount);
-    } else if (channelCount >= 11) {
+    } else if (channelCount == DEFAULT_11CH_COUNT) {
+        setRemoteMappings(DEFAULT_11CH_REMOTE_MAPPINGS, DEFAULT_11CH_REMOTE_MAPPING_COUNT);
+    } else if (channelCount >= DEFAULT_24CH_COUNT) {
         setRemoteMappings(DEFAULT_REMOTE_MAPPINGS, DEFAULT_REMOTE_MAPPING_COUNT);
     }
 }
@@ -180,6 +239,10 @@ void SystemController::addRemoteMapping(uint8_t remoteId, uint8_t buttonIndex, i
 }
 
 void SystemController::begin() {
+    Serial.printf("VanNOW Central Alpha — channel profile %u (%s)\n",
+                  (unsigned)compiledChannelProfile(),
+                  compiledChannelProfile() == 11 ? "legacy PROFET 150x95" : "24-ch 180x110");
+
     // 1. Initialize physical channels
     for (uint8_t i = 0; i < _channelCount; i++) {
         if (_channels[i]) {

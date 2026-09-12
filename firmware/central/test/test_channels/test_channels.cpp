@@ -633,6 +633,29 @@ void test_modular_system_controller_custom_config(void) {
     TEST_ASSERT_EQUAL(LOW, ArduinoMock::getPinState(16));
 }
 
+void test_11_channel_legacy_profile(void) {
+    SystemController controller(SystemController::DEFAULT_11CH_CONFIG,
+                                SystemController::DEFAULT_11CH_COUNT);
+    controller.begin();
+
+    TEST_ASSERT_EQUAL_UINT8(11, controller.getChannelCount());
+    TEST_ASSERT_EQUAL(4, controller.getChannel(4)->getPin());
+    TEST_ASSERT_EQUAL_STRING("Water Pump", controller.getChannel(4)->getName());
+    TEST_ASSERT_EQUAL(18, controller.getChannel(10)->getPin());
+    TEST_ASSERT_EQUAL_STRING("DC-DC Orion-XS #1", controller.getChannel(10)->getName());
+    TEST_ASSERT_NULL(controller.getChannel(14));
+
+    uint8_t mac[6] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06};
+    SwitchMessage msg = {};
+    msg.remote_id = 3;
+    msg.button_index = 4;
+    msg.action = (uint8_t)ActionType::Click;
+    msg.seq = 1;
+    controller.dispatchMessage(mac, msg);
+    TEST_ASSERT_TRUE(controller.getChannel(9)->getState());
+    TEST_ASSERT_EQUAL(21, controller.getChannel(9)->getPin());
+}
+
 void test_24_channel_full_matrix(void) {
     SystemController controller; // Default 24 channels
     controller.begin();
@@ -893,6 +916,7 @@ int main(int argc, char **argv) {
     RUN_TEST(test_shower_mode_nvs_configuration);
     RUN_TEST(test_pulse_channel);
     RUN_TEST(test_modular_system_controller_custom_config);
+    RUN_TEST(test_11_channel_legacy_profile);
     RUN_TEST(test_24_channel_full_matrix);
     RUN_TEST(test_remote_mapping_customization);
     RUN_TEST(test_digital_channel_ignores_hold_shower);

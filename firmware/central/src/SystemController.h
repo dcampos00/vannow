@@ -11,6 +11,12 @@
 #include "AntiReplayFilter.h"
 #include <Preferences.h>
 
+// Compile-time carrier identity. Flash 24 onto profet_24ch (180x110 mm),
+// 11 onto the legacy VanCentralControllerPROFET carrier (150x95 mm).
+#ifndef VANNOW_CHANNEL_PROFILE
+#define VANNOW_CHANNEL_PROFILE 24
+#endif
+
 // Channel operational archetype
 enum class ChannelType : uint8_t {
     Dimmable,
@@ -47,12 +53,16 @@ class SystemController {
 public:
     static constexpr uint8_t MAX_CHANNELS = 32;
     static constexpr uint8_t MAX_REMOTE_MAPPINGS = 64;
-    static constexpr uint8_t DEFAULT_CHANNEL_COUNT = 24;
+    static constexpr uint8_t DEFAULT_24CH_COUNT = 24;
+    static constexpr uint8_t DEFAULT_11CH_COUNT = 11;
+    static constexpr uint8_t DEFAULT_CHANNEL_COUNT = DEFAULT_24CH_COUNT;
     static constexpr uint8_t NUM_CHANNELS = DEFAULT_CHANNEL_COUNT; // Backwards-compatible alias
     static constexpr uint8_t ENCODER_BUTTON_INDEX = 7;
     static constexpr uint8_t MAX_TRACKED_REMOTES = 8;
 
-    // Default constructor: loads default 24-channel configuration and standard remote mappings
+    static uint8_t compiledChannelProfile();
+
+    // Default constructor: 24-ch or 11-ch tables according to VANNOW_CHANNEL_PROFILE
     SystemController();
 
     // Parameterized constructor: custom channel configurations and optional custom remote mappings
@@ -100,9 +110,12 @@ public:
     int8_t getFocusChannel(uint8_t remoteId) const;
 
     // Authoritative default configurations
-    static const ChannelConfig DEFAULT_24CH_CONFIG[DEFAULT_CHANNEL_COUNT];
+    static const ChannelConfig DEFAULT_24CH_CONFIG[DEFAULT_24CH_COUNT];
+    static const ChannelConfig DEFAULT_11CH_CONFIG[DEFAULT_11CH_COUNT];
     static const RemoteMapping DEFAULT_REMOTE_MAPPINGS[20];
+    static const RemoteMapping DEFAULT_11CH_REMOTE_MAPPINGS[20];
     static const size_t DEFAULT_REMOTE_MAPPING_COUNT;
+    static const size_t DEFAULT_11CH_REMOTE_MAPPING_COUNT;
 
 private:
     void initChannels(const ChannelConfig* channelConfigs, size_t channelCount);

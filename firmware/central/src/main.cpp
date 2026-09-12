@@ -79,7 +79,7 @@ void OnDataRecv(const esp_now_recv_info *recv_info, const uint8_t *incomingData,
 void setup() {
     Serial.begin(115200);
     delay(1000);
-    Serial.println("Starting VanNOW Central Controller...");
+    Serial.println("Starting VanNOW Central Controller (alpha, not 1.0)...");
 
 #ifdef RGB_BUILTIN
     // GPIO 38 (v1.1) / GPIO 48 (v1.0) are optocoupler outputs. Do not drive the DevKit WS2812.
