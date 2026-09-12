@@ -47,6 +47,9 @@ public:
      */
     bool isInitialized(uint8_t remoteId) const;
 
+    bool exportState(uint8_t remoteId, uint32_t& maxSeq, uint64_t& windowBitmap, bool& initialized) const;
+    bool importState(uint8_t remoteId, uint32_t maxSeq, uint64_t windowBitmap, bool initialized);
+
 private:
     struct RemoteState {
         uint32_t maxSeq;

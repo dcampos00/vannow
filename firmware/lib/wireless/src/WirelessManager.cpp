@@ -9,7 +9,9 @@ bool WirelessManager::begin(const uint8_t* customMac) {
     WiFi.disconnect();
 
     if (customMac != nullptr) {
-        esp_wifi_set_mac(WIFI_IF_STA, customMac);
+        if (esp_wifi_set_mac(WIFI_IF_STA, customMac) != ESP_OK) {
+            Serial.println("Warning: failed to apply provisioned STA MAC; using eFuse MAC.");
+        }
     }
 
     // Set Wi-Fi channel to fixed channel 1 (FR-01)

@@ -95,7 +95,7 @@ module Seeed_XIAO_ESP32C6:
     signal GPIO17   ~ header_right.pin_1 # D7 (Sense Water Pump)
     signal GPIO19   ~ header_right.pin_2 # D8 (Sense Master Shutdown)
     signal GPIO20   ~ header_right.pin_3 # D9 (Sense Encoder Push Switch)
-    signal GPIO9    ~ header_right.pin_4 # D10 (Status LED)
+    signal GPIO18   ~ header_right.pin_4 # D10 (Status LED, GPIO 18 MOSI — not GPIO 9 BOOT)
     signal V3P3     ~ header_right.pin_5 # 3V3 Input
     signal GND      ~ header_right.pin_6 # GND
     signal V5       ~ header_right.pin_7 # 5V (NC)
@@ -167,7 +167,7 @@ module MasterEntranceRemote:
     btn_zone3.mcu_sense ~ mcu.GPIO23 # D5 -> Zone 3 (Bed / Reading)
     btn_zone4.mcu_sense ~ mcu.GPIO16 # D6 -> Zone 4 (Porch / Awning)
     btn_pump.mcu_sense  ~ mcu.GPIO17 # D7 -> Water Pump
-    btn_night.mcu_sense ~ mcu.GPIO19 # D8 -> Master Night Shutdown (All OFF)
+    btn_night.mcu_sense ~ mcu.GPIO19 # D8 -> Master Night Shutdown (All OFF). Firmware button index 5.
 
     # 4. Master EC11 Rotary Encoder Station
     encoder = new RotaryEncoder_EC11
@@ -234,6 +234,6 @@ module MasterEntranceRemote:
     r_status = new MyResistor
     r_status.value = "1k"
 
-    mcu.GPIO9 ~ status_led.anode
+    mcu.GPIO18 ~ status_led.anode
     status_led.cathode ~ r_status.p1
     r_status.p2 ~ gnd

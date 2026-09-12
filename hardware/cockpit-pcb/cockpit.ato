@@ -87,7 +87,7 @@ module Seeed_XIAO_ESP32C6:
     signal GPIO17   ~ header_right.pin_1 # D7
     signal GPIO19   ~ header_right.pin_2 # D8
     signal GPIO20   ~ header_right.pin_3 # D9
-    signal GPIO9    ~ header_right.pin_4 # D10 (Status LED)
+    signal GPIO18   ~ header_right.pin_4 # D10 (Status LED, GPIO 18 MOSI — not GPIO 9 BOOT)
     signal V3P3     ~ header_right.pin_5 # 3V3 Input
     signal GND      ~ header_right.pin_6 # GND
     signal V5       ~ header_right.pin_7 # 5V (NC)
@@ -203,7 +203,7 @@ module CockpitControllerHub:
     r_status = new MyResistor
     r_status.value = "1k"
 
-    mcu.GPIO9 ~ status_led.anode
+    mcu.GPIO18 ~ status_led.anode
     status_led.cathode ~ r_status.p1
     r_status.p2 ~ gnd
 

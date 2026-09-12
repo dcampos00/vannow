@@ -1,5 +1,7 @@
 # Guía de Prototipado y Lista de Compras
 
+> **Wiring in §2 is obsolete.** Use [`breadboard_prototyping_and_validation_guide.md`](breadboard_prototyping_and_validation_guide.md) for pins, flash commands, and the test protocol. This file is only a shopping checklist. Do not feed 2×AA into the XIAO `3V3` pin.
+
 Este documento detalla los componentes necesarios para construir un prototipo inicial de pruebas (una unidad central y una unidad remota) en una placa de pruebas (breadboard / protoboard). Esto te permitirá validar la comunicación inalámbrica ESP-NOW, el modo Deep Sleep (consumo) y la conmutación física antes de fabricar la placa PCB final.
 
 ---

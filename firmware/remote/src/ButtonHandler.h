@@ -6,33 +6,44 @@
 
 class ButtonHandler {
 public:
-    ButtonHandler(uint8_t pin, uint8_t buttonIndex);
+    enum class InputMode : uint8_t {
+        Momentary, // Click / DoubleClick / StartHold keep-alives (entrance panel)
+        Latching   // Click on each edge only (cockpit Carling rockers)
+    };
 
-    // Setup input pins
+    ButtonHandler(uint8_t pin, uint8_t buttonIndex, InputMode mode = InputMode::Momentary);
+
     void begin();
-
-    // Check button status and outputs active events
     bool checkEvent(ActionType& actionType);
 
 private:
     uint8_t _pin;
     uint8_t _buttonIndex;
+    InputMode _mode;
 
     enum class State {
         Idle,
         Debounce,
         Pressed,
-        Holding
+        WaitDoubleClick,
+        DebounceSecond,
+        Holding,
+        LatchingHeld
     };
 
     State _state;
     uint32_t _pressStartTime;
     uint32_t _lastHoldTime;
     uint32_t _lastPressedTime;
+    uint32_t _releaseTime;
 
     static constexpr uint32_t DEBOUNCE_MS = 15;
-    static constexpr uint32_t HOLD_THRESHOLD_MS = 400; // Time in ms before click turns into a hold
-    static constexpr uint32_t HOLD_PERIOD_MS = 150;     // Interval between periodic hold messages
+    static constexpr uint32_t HOLD_THRESHOLD_MS = 400;
+    static constexpr uint32_t HOLD_PERIOD_MS = 150;
+    static constexpr uint32_t DOUBLE_CLICK_MS = 320;
+
+    bool handleMomentary(bool pinPressed, uint32_t now, ActionType& actionType);
+    bool handleLatching(bool pinPressed, uint32_t now, ActionType& actionType);
 };
 
 #endif // BUTTON_HANDLER_H

@@ -1,11 +1,14 @@
 #include <unity.h>
 #include <Arduino.h>
+#include <Preferences.h>
 #include "DigitalChannel.h"
 #include "DimmableChannel.h"
+#include "PulseChannel.h"
 #include "SystemController.h"
 
 void setUp(void) {
     ArduinoMock::reset();
+    Preferences::resetMockStorage();
 }
 
 void tearDown(void) {
@@ -236,8 +239,8 @@ void test_system_controller_basics(void) {
     }
     TEST_ASSERT_EQUAL(204, ArduinoMock::getLEDCWrite(12));
     
-    // Water pump
-    msg.button_index = 2;
+    // Water pump (entrance BTN5)
+    msg.button_index = 4;
     msg.seq = 2;
     controller.dispatchMessage(entryMac, msg);
     TEST_ASSERT_EQUAL(HIGH, ArduinoMock::getPinState(4));
@@ -480,10 +483,10 @@ void test_water_pump_shower_mode_dispatch_and_cancel(void) {
     TEST_ASSERT_NOT_NULL(pump);
     TEST_ASSERT_FALSE(pump->getState());
 
-    // 1. Entry panel (remote_id 1, button 2) sends DoubleClick -> starts Shower Mode
+    // 1. Entry panel (remote_id 1, button 4) sends DoubleClick -> starts Shower Mode
     SwitchMessage msg = {};
     msg.remote_id = 1;
-    msg.button_index = 2; // Water Pump
+    msg.button_index = 4; // Water Pump
     msg.action = (uint8_t)ActionType::DoubleClick;
     msg.seq = 100;
     controller.dispatchMessage(mac, msg);
@@ -505,7 +508,7 @@ void test_water_pump_shower_mode_dispatch_and_cancel(void) {
 
     SwitchMessage cancelMsg = {};
     cancelMsg.remote_id = 1;
-    cancelMsg.button_index = 2;
+    cancelMsg.button_index = 4;
     cancelMsg.action = (uint8_t)ActionType::Click;
     cancelMsg.seq = 101;
     controller.dispatchMessage(mac, cancelMsg);
@@ -630,6 +633,29 @@ void test_modular_system_controller_custom_config(void) {
     TEST_ASSERT_EQUAL(LOW, ArduinoMock::getPinState(16));
 }
 
+void test_11_channel_legacy_profile(void) {
+    SystemController controller(SystemController::DEFAULT_11CH_CONFIG,
+                                SystemController::DEFAULT_11CH_COUNT);
+    controller.begin();
+
+    TEST_ASSERT_EQUAL_UINT8(11, controller.getChannelCount());
+    TEST_ASSERT_EQUAL(4, controller.getChannel(4)->getPin());
+    TEST_ASSERT_EQUAL_STRING("Water Pump", controller.getChannel(4)->getName());
+    TEST_ASSERT_EQUAL(18, controller.getChannel(10)->getPin());
+    TEST_ASSERT_EQUAL_STRING("DC-DC Orion-XS #1", controller.getChannel(10)->getName());
+    TEST_ASSERT_NULL(controller.getChannel(14));
+
+    uint8_t mac[6] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06};
+    SwitchMessage msg = {};
+    msg.remote_id = 3;
+    msg.button_index = 4;
+    msg.action = (uint8_t)ActionType::Click;
+    msg.seq = 1;
+    controller.dispatchMessage(mac, msg);
+    TEST_ASSERT_TRUE(controller.getChannel(9)->getState());
+    TEST_ASSERT_EQUAL(21, controller.getChannel(9)->getPin());
+}
+
 void test_24_channel_full_matrix(void) {
     SystemController controller; // Default 24 channels
     controller.begin();
@@ -666,11 +692,11 @@ void test_24_channel_full_matrix(void) {
     TEST_ASSERT_EQUAL_STRING("Aux Signal 3 (Gen Start)", genStart->getName());
     TEST_ASSERT_EQUAL(16, genStart->getPin());
 
-    // Remote 1 button 3 mapped to Inverter MultiPlus II (Ch 14, pin 21)
+    // Cockpit Remote 3 SW5 (button 4) mapped to Inverter MultiPlus II (Ch 14, pin 21)
     uint8_t mac[6] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06};
     SwitchMessage msg = {};
-    msg.remote_id = 1;
-    msg.button_index = 3;
+    msg.remote_id = 3;
+    msg.button_index = 4;
     msg.action = (uint8_t)ActionType::Click;
     msg.seq = 1;
 
@@ -681,7 +707,7 @@ void test_24_channel_full_matrix(void) {
     // Cockpit Remote 3 SW2 (button 1) mapped to Orion-XS #1 (Ch 15, pin 38)
     msg.remote_id = 3;
     msg.button_index = 1;
-    msg.seq = 1;
+    msg.seq = 2;
 
     controller.dispatchMessage(mac, msg);
     TEST_ASSERT_TRUE(controller.getChannel(15)->getState());
@@ -690,7 +716,7 @@ void test_24_channel_full_matrix(void) {
     // Cockpit Remote 3 SW5 (button 4) toggles Inverter (Ch 14, pin 21) -> should turn OFF
     msg.remote_id = 3;
     msg.button_index = 4;
-    msg.seq = 2;
+    msg.seq = 3;
 
     controller.dispatchMessage(mac, msg);
     TEST_ASSERT_FALSE(controller.getChannel(14)->getState());
@@ -721,6 +747,156 @@ void test_remote_mapping_customization(void) {
     TEST_ASSERT_EQUAL(LOW, ArduinoMock::getPinState(47));
 }
 
+void test_digital_channel_ignores_hold_shower(void) {
+    DigitalChannel inverter("Inverter (Multiplus II)", 21);
+    inverter.begin();
+
+    inverter.handleAction(ActionType::StartHold, 0);
+    TEST_ASSERT_FALSE(inverter.getState());
+    TEST_ASSERT_FALSE(inverter.isTimedActive());
+    TEST_ASSERT_EQUAL(LOW, ArduinoMock::getPinState(21));
+
+    inverter.handleAction(ActionType::DoubleClick, 0);
+    TEST_ASSERT_FALSE(inverter.getState());
+    TEST_ASSERT_FALSE(inverter.isTimedActive());
+}
+
+void test_pulse_channel_ignores_hold_keepalive(void) {
+    PulseChannel pulse("Maxxair Keypad Pulse", 47, 250);
+    pulse.begin();
+
+    pulse.handleAction(ActionType::StartHold, 0);
+    TEST_ASSERT_FALSE(pulse.getState());
+    TEST_ASSERT_EQUAL(LOW, ArduinoMock::getPinState(47));
+
+    pulse.handleAction(ActionType::Click, 0);
+    TEST_ASSERT_TRUE(pulse.getState());
+}
+
+void test_shower_mode_ignores_hold_keepalives(void) {
+    SystemController controller;
+    controller.begin();
+    uint8_t mac[6] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0x11};
+
+    DigitalChannel* pump = static_cast<DigitalChannel*>(controller.getChannel(4));
+    TEST_ASSERT_NOT_NULL(pump);
+
+    SwitchMessage msg = {};
+    msg.remote_id = 1;
+    msg.button_index = 4;
+    msg.action = (uint8_t)ActionType::StartHold;
+    msg.seq = 10;
+    controller.dispatchMessage(mac, msg);
+    TEST_ASSERT_TRUE(pump->isTimedActive());
+
+    msg.seq = 11;
+    controller.dispatchMessage(mac, msg);
+    TEST_ASSERT_TRUE(pump->isTimedActive());
+    TEST_ASSERT_TRUE(pump->getState());
+
+    msg.seq = 12;
+    controller.dispatchMessage(mac, msg);
+    TEST_ASSERT_TRUE(pump->isTimedActive());
+
+    msg.action = (uint8_t)ActionType::Click;
+    msg.seq = 13;
+    controller.dispatchMessage(mac, msg);
+    TEST_ASSERT_FALSE(pump->getState());
+    TEST_ASSERT_FALSE(pump->isTimedActive());
+}
+
+void test_encoder_focus_zone_and_boost(void) {
+    SystemController controller;
+    controller.begin();
+    uint8_t mac[6] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
+
+    SwitchMessage msg = {};
+    msg.remote_id = 1;
+    msg.button_index = 2; // Zone 3
+    msg.action = (uint8_t)ActionType::Click;
+    msg.seq = 1;
+    controller.dispatchMessage(mac, msg);
+    TEST_ASSERT_EQUAL(2, controller.getFocusChannel(1));
+
+    DimmableChannel* zone3 = static_cast<DimmableChannel*>(controller.getChannel(2));
+    zone3->setBrightness(40);
+
+    msg.button_index = SystemController::ENCODER_BUTTON_INDEX;
+    msg.action = (uint8_t)ActionType::EncoderTurn;
+    msg.rotation_steps = 2;
+    msg.seq = 2;
+    controller.dispatchMessage(mac, msg);
+    TEST_ASSERT_EQUAL(50, zone3->getBrightness());
+
+    DimmableChannel* zone1 = static_cast<DimmableChannel*>(controller.getChannel(0));
+    TEST_ASSERT_EQUAL(0, zone1->getBrightness());
+
+    msg.action = (uint8_t)ActionType::Click;
+    msg.rotation_steps = 0;
+    msg.seq = 3;
+    controller.dispatchMessage(mac, msg);
+    TEST_ASSERT_EQUAL(100, zone3->getBrightness());
+}
+
+void test_anti_replay_persists_across_reboot(void) {
+    uint8_t mac[6] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0x11};
+    {
+        SystemController controller;
+        controller.begin();
+        SwitchMessage msg = {};
+        msg.remote_id = 1;
+        msg.button_index = 0;
+        msg.action = (uint8_t)ActionType::Click;
+        msg.seq = 50;
+        controller.dispatchMessage(mac, msg);
+        TEST_ASSERT_TRUE(controller.getChannel(0)->getState());
+    }
+
+    SystemController rebooted;
+    rebooted.begin();
+    TEST_ASSERT_TRUE(rebooted.getChannel(0)->getState());
+
+    SwitchMessage replay = {};
+    replay.remote_id = 1;
+    replay.button_index = 0;
+    replay.action = (uint8_t)ActionType::Click;
+    replay.seq = 50;
+    rebooted.dispatchMessage(mac, replay);
+    TEST_ASSERT_TRUE(rebooted.getChannel(0)->getState());
+
+    replay.seq = 51;
+    rebooted.dispatchMessage(mac, replay);
+    TEST_ASSERT_FALSE(rebooted.getChannel(0)->getState());
+}
+
+void test_entrance_night_button_turns_off_lights(void) {
+    SystemController controller;
+    controller.begin();
+    uint8_t mac[6] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0x11};
+
+    SwitchMessage msg = {};
+    msg.remote_id = 1;
+    msg.button_index = 0;
+    msg.action = (uint8_t)ActionType::Click;
+    msg.seq = 1;
+    controller.dispatchMessage(mac, msg);
+    for (int i = 0; i < 80; i++) {
+        ArduinoMock::advanceMillis(5);
+        controller.update();
+    }
+    TEST_ASSERT_TRUE(controller.getChannel(0)->getState());
+
+    msg.button_index = 5;
+    msg.seq = 2;
+    controller.dispatchMessage(mac, msg);
+    controller.update();
+    for (int i = 0; i < 80; i++) {
+        ArduinoMock::advanceMillis(5);
+        controller.update();
+    }
+    TEST_ASSERT_EQUAL(0, static_cast<DimmableChannel*>(controller.getChannel(0))->getBrightness());
+}
+
 int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(test_digital_channel_toggle);
@@ -740,8 +916,15 @@ int main(int argc, char **argv) {
     RUN_TEST(test_shower_mode_nvs_configuration);
     RUN_TEST(test_pulse_channel);
     RUN_TEST(test_modular_system_controller_custom_config);
+    RUN_TEST(test_11_channel_legacy_profile);
     RUN_TEST(test_24_channel_full_matrix);
     RUN_TEST(test_remote_mapping_customization);
+    RUN_TEST(test_digital_channel_ignores_hold_shower);
+    RUN_TEST(test_pulse_channel_ignores_hold_keepalive);
+    RUN_TEST(test_shower_mode_ignores_hold_keepalives);
+    RUN_TEST(test_encoder_focus_zone_and_boost);
+    RUN_TEST(test_anti_replay_persists_across_reboot);
+    RUN_TEST(test_entrance_night_button_turns_off_lights);
     return UNITY_END();
 }
 

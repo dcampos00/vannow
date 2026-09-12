@@ -15,6 +15,9 @@ public:
     // Pack and send action packet to the target peer
     bool send(ActionType action, uint8_t buttonIndex, int8_t rotationSteps);
 
+    // Persist monotonic sequence to NVS so a battery swap does not lock out the remote
+    void persistSequence();
+
     // Read battery voltage using external 1:1 divisor
     float readBatteryVoltage();
 

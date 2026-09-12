@@ -18,16 +18,11 @@ void DigitalChannel::begin() {
 }
 
 void DigitalChannel::handleAction(ActionType action, int8_t rotationSteps) {
+    (void)rotationSteps;
+    // Digital outputs only toggle on Click. Timed shower / chirp is pump-specific
+    // and is invoked exclusively through SystemController::activateTimer().
     if (action == ActionType::Click) {
-        // Digital outputs toggle ON/OFF on Click. Cancels timed run if active.
         setState(!_isActive);
-    } else if (action == ActionType::DoubleClick || action == ActionType::StartHold) {
-        // Double-click or hold activates 5-minute shower mode with acoustic chirp
-        if (_isActive && _isTimedRun) {
-            setState(false); // Cancel early
-        } else {
-            activateTimer(300000, true); // 300,000 ms = 5 minutes
-        }
     }
 }
 
