@@ -296,8 +296,9 @@ void SystemController::saveChannelState(uint8_t channelIndex) {
     snprintf(keyState, sizeof(keyState), "ch%u_state", channelIndex);
     bool currState = _channels[channelIndex]->getState();
 
-    // Prevent redundant flash writes
-    if (!prefs.isKey(keyState) || prefs.getBool(keyState, !currState) != currState) {
+    // FIX [MEDIUM-01]: Optimize NVS read by reading once instead of isKey + get
+    bool prevState = prefs.getBool(keyState, !currState);
+    if (prevState != currState) {
         prefs.putBool(keyState, currState);
     }
 
@@ -306,7 +307,8 @@ void SystemController::saveChannelState(uint8_t channelIndex) {
         char keyBri[16];
         snprintf(keyBri, sizeof(keyBri), "ch%u_bri", channelIndex);
         uint8_t currBri = dim->getLastOnBrightness();
-        if (!prefs.isKey(keyBri) || prefs.getUChar(keyBri, 0) != currBri) {
+        uint8_t prevBri = prefs.getUChar(keyBri, 0);
+        if (prevBri != currBri) {
             prefs.putUChar(keyBri, currBri);
         }
     }
@@ -538,6 +540,7 @@ void SystemController::loadAntiReplayState() {
             continue;
         }
         uint32_t maxSeq = prefs.getUInt(keySeq, 0);
+        // FIX [MEDIUM-04]: Load windowBitmap from NVS (was hardcoded to 1ULL, causing replay vulnerability after reboot)
         uint64_t bitmap = prefs.getULong64(keyBmp, 1ULL);
         _antiReplay.importState(remoteId, maxSeq, bitmap, true);
     }
@@ -564,8 +567,16 @@ void SystemController::saveAntiReplayState(uint8_t remoteId) {
     snprintf(keyInit, sizeof(keyInit), "r%u_init", remoteId);
     snprintf(keySeq, sizeof(keySeq), "r%u_seq", remoteId);
     snprintf(keyBmp, sizeof(keyBmp), "r%u_bmp", remoteId);
-    prefs.putBool(keyInit, true);
-    prefs.putUInt(keySeq, maxSeq);
-    prefs.putULong64(keyBmp, bitmap);
+    
+    // FIX [HIGH-01]: Check if values changed before writing to reduce flash wear
+    bool seqChanged = !prefs.isKey(keySeq) || prefs.getUInt(keySeq, 0) != maxSeq;
+    bool bmpChanged = !prefs.isKey(keyBmp) || prefs.getULong64(keyBmp, 0) != bitmap;
+    
+    if (seqChanged || bmpChanged) {
+        prefs.putBool(keyInit, true);
+        if (seqChanged) prefs.putUInt(keySeq, maxSeq);
+        if (bmpChanged) prefs.putULong64(keyBmp, bitmap);
+    }
+    
     prefs.end();
 }

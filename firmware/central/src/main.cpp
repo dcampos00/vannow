@@ -93,8 +93,9 @@ void setup() {
     Serial.println(WiFi.macAddress());
 
 #if defined(ARDUINO_ARCH_ESP32)
-    // Create thread-safe packet queue (depth 16)
-    packetQueue = xQueueCreate(16, sizeof(PacketQueueItem));
+    // Create thread-safe packet queue (depth 32 to prevent overflow under NVS write load)
+    // FIX [HIGH-02]: Increased from 16 to 32 to handle bursty traffic during Serial/NVS blocking
+    packetQueue = xQueueCreate(32, sizeof(PacketQueueItem));
 
     // Initialize Task Watchdog Timer (10s timeout)
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
@@ -159,5 +160,7 @@ void loop() {
         Serial.printf("[Heartbeat] Central Active | Cabin Battery: %.2f V\n", mainBattery);
     }
     
-    delay(5);
+    // FIX [MEDIUM-02]: Reduced delay from 5ms to 1ms for better responsiveness (loop rate 1 kHz vs 200 Hz)
+    // Maintains sufficient headroom for 200 Hz PROFET PWM while reducing input latency
+    delay(1);
 }
