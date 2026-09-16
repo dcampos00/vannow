@@ -220,5 +220,7 @@ void loop() {
         powerManager.goToSleep(wakeupPins, NUM_WAKEUP_PINS);
     }
 
-    delayMicroseconds(250);
+    // FIX [MEDIUM-03]: Increased delay from 250µs to 5ms to reduce power consumption
+    // Button debounce is 30ms, so 200 Hz loop rate (5ms) is still 6× faster than needed
+    delay(5);
 }

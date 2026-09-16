@@ -869,6 +869,60 @@ void test_anti_replay_persists_across_reboot(void) {
     TEST_ASSERT_FALSE(rebooted.getChannel(0)->getState());
 }
 
+void test_anti_replay_window_persists_across_reboot(void) {
+    uint8_t mac[6] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0x11};
+    {
+        SystemController controller;
+        controller.begin();
+        SwitchMessage msg = {};
+        msg.remote_id = 1;
+        msg.button_index = 0;
+        msg.action = (uint8_t)ActionType::Click;
+        
+        // Send seq 100 (maxSeq = 100, bitmap = 1)
+        msg.seq = 100;
+        controller.dispatchMessage(mac, msg);
+        TEST_ASSERT_TRUE(controller.getChannel(0)->getState());
+        
+        // Send out-of-order seq 98 (2 behind, within 64-packet window)
+        // This should be accepted and set bit 2 in the bitmap
+        msg.seq = 98;
+        controller.dispatchMessage(mac, msg);
+        TEST_ASSERT_FALSE(controller.getChannel(0)->getState()); // Toggle OFF
+        
+        // Verify seq 98 is now marked as seen (replay should be rejected)
+        msg.seq = 98;
+        controller.dispatchMessage(mac, msg);
+        TEST_ASSERT_FALSE(controller.getChannel(0)->getState()); // State unchanged = replay rejected
+    }
+    
+    // "Reboot" - create fresh controller instance
+    {
+        SystemController rebooted;
+        rebooted.begin();
+        
+        // FIX [MEDIUM-04]: After reboot, windowBitmap should be restored from NVS
+        // Replay of seq 98 must be REJECTED (already in persisted window)
+        SwitchMessage replay = {};
+        replay.remote_id = 1;
+        replay.button_index = 0;
+        replay.action = (uint8_t)ActionType::Click;
+        replay.seq = 98;
+        
+        bool stateBeforeReplay = rebooted.getChannel(0)->getState();
+        rebooted.dispatchMessage(mac, replay);
+        bool stateAfterReplay = rebooted.getChannel(0)->getState();
+        
+        // State should NOT change (replay rejected due to persisted bitmap)
+        TEST_ASSERT_EQUAL(stateBeforeReplay, stateAfterReplay);
+        
+        // New valid packet (seq 101) should still be accepted
+        replay.seq = 101;
+        rebooted.dispatchMessage(mac, replay);
+        TEST_ASSERT_NOT_EQUAL(stateBeforeReplay, rebooted.getChannel(0)->getState());
+    }
+}
+
 void test_entrance_night_button_turns_off_lights(void) {
     SystemController controller;
     controller.begin();
@@ -924,6 +978,7 @@ int main(int argc, char **argv) {
     RUN_TEST(test_shower_mode_ignores_hold_keepalives);
     RUN_TEST(test_encoder_focus_zone_and_boost);
     RUN_TEST(test_anti_replay_persists_across_reboot);
+    RUN_TEST(test_anti_replay_window_persists_across_reboot);
     RUN_TEST(test_entrance_night_button_turns_off_lights);
     return UNITY_END();
 }
